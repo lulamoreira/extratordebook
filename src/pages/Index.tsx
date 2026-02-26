@@ -1,4 +1,4 @@
-import { extractedPieces } from "@/data/extractedPieces";
+import { extractedPieces, classificarTipo } from "@/data/extractedPieces";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ const Index = () => {
       Seção: p.secao,
       Código: p.codigo,
       "Nome da Peça": p.nomePeca,
+      "Tipo de Peça": classificarTipo(p.nomePeca),
       "Tamanho (cm)": p.tamanho,
       Especificação: p.especificacao,
       Cores: p.cores,
@@ -29,6 +30,7 @@ const Index = () => {
       { wch: 35 },
       { wch: 55 },
       { wch: 35 },
+      { wch: 18 },
       { wch: 20 },
       { wch: 70 },
       { wch: 8 },
@@ -64,6 +66,7 @@ const Index = () => {
                 <TableHead>Seção</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Nome da Peça</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Tamanho</TableHead>
                 <TableHead>Especificação / Notas</TableHead>
                 <TableHead className="w-16">Cores</TableHead>
@@ -78,6 +81,7 @@ const Index = () => {
                     {p.codigo}
                   </TableCell>
                   <TableCell>{p.nomePeca}</TableCell>
+                  <TableCell className="text-xs">{classificarTipo(p.nomePeca)}</TableCell>
                   <TableCell>{p.tamanho}</TableCell>
                   <TableCell className="text-sm max-w-sm">
                     {p.especificacao || "—"}
