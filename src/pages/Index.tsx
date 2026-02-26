@@ -15,6 +15,7 @@ const Index = () => {
   const handleDownload = () => {
     const wsData = extractedPieces.map((p) => ({
       Página: p.pagina,
+      Seção: p.secao,
       Código: p.codigo,
       "Nome da Peça": p.nomePeca,
       "Tamanho (cm)": p.tamanho,
@@ -25,6 +26,7 @@ const Index = () => {
     const ws = XLSX.utils.json_to_sheet(wsData);
     ws["!cols"] = [
       { wch: 8 },
+      { wch: 35 },
       { wch: 55 },
       { wch: 35 },
       { wch: 20 },
@@ -59,6 +61,7 @@ const Index = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">Pág.</TableHead>
+                <TableHead>Seção</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Nome da Peça</TableHead>
                 <TableHead>Tamanho</TableHead>
@@ -70,6 +73,7 @@ const Index = () => {
               {extractedPieces.map((p, i) => (
                 <TableRow key={i}>
                   <TableCell className="font-medium">{p.pagina}</TableCell>
+                  <TableCell className="text-xs font-semibold">{p.secao}</TableCell>
                   <TableCell className="text-xs font-mono break-all max-w-xs">
                     {p.codigo}
                   </TableCell>
