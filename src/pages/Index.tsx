@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
+import UserMenu from "@/components/UserMenu";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,13 +180,16 @@ const Index = () => {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">
-            Extrator de Peças — Books de Campanha
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              Extrator de Peças — Books de Campanha
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
+            </p>
+          </div>
+          <UserMenu />
         </div>
 
         {/* Warning */}
