@@ -1,11 +1,95 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { extractedPieces } from "@/data/extractedPieces";
+import * as XLSX from "xlsx";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Download } from "lucide-react";
 
 const Index = () => {
+  const handleDownload = () => {
+    const wsData = extractedPieces.map((p) => ({
+      Página: p.pagina,
+      Código: p.codigo,
+      "Nome da Peça": p.nomePeca,
+      "Tamanho (cm)": p.tamanho,
+      Especificação: p.especificacao,
+      Cores: p.cores,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(wsData);
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 55 },
+      { wch: 35 },
+      { wch: 20 },
+      { wch: 70 },
+      { wch: 8 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Peças Aurora Mães 2026");
+    XLSX.writeFile(wb, "NAT_AURORA_MAES_BOOK_Extração.xlsx");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background p-6 md:p-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              Natura Aurora — Mães 2026
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {extractedPieces.length} peças extraídas (páginas 1–50 de 110)
+            </p>
+          </div>
+          <Button onClick={handleDownload} className="gap-2">
+            <Download className="h-4 w-4" />
+            Baixar Excel
+          </Button>
+        </div>
+
+        <div className="rounded-lg border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16">Pág.</TableHead>
+                <TableHead>Código</TableHead>
+                <TableHead>Nome da Peça</TableHead>
+                <TableHead>Tamanho</TableHead>
+                <TableHead>Especificação / Notas</TableHead>
+                <TableHead className="w-16">Cores</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {extractedPieces.map((p, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{p.pagina}</TableCell>
+                  <TableCell className="text-xs font-mono break-all max-w-xs">
+                    {p.codigo}
+                  </TableCell>
+                  <TableCell>{p.nomePeca}</TableCell>
+                  <TableCell>{p.tamanho}</TableCell>
+                  <TableCell className="text-sm max-w-sm">
+                    {p.especificacao || "—"}
+                  </TableCell>
+                  <TableCell className="font-medium">{p.cores}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <p className="mt-4 text-xs text-muted-foreground">
+          ⚠️ O PDF tem 110 páginas. Apenas as primeiras 50 foram processadas.
+          As páginas restantes (51–110) precisam ser enviadas separadamente ou
+          o PDF dividido em partes menores.
+        </p>
       </div>
     </div>
   );
