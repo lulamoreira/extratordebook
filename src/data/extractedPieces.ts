@@ -1,5 +1,6 @@
 export interface Piece {
   pagina: number;
+  secao: string;
   codigo: string;
   nomePeca: string;
   tamanho: string;
@@ -11,6 +12,7 @@ export const extractedPieces: Piece[] = [
   // ===== VITRINES — TODAS AS LOJAS (páginas 4–7) =====
   {
     pagina: 4,
+    secao: "VITRINES — TODAS AS LOJAS",
     codigo: "NAT_MAES_VIT_AUR_TDS_TESTEIRA_AURA_30x24cm",
     nomePeca: "Testeira Aura",
     tamanho: "30x24",
@@ -19,6 +21,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 5,
+    secao: "VITRINES — TODAS AS LOJAS",
     codigo: "NAT_MAES_VIT_AUR_TDS_APLIQUE_TESTEIRA_AURA_6x6cm",
     nomePeca: "Aplique Testeira Aura",
     tamanho: "6x6",
@@ -27,6 +30,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 7,
+    secao: "VITRINES — TODAS AS LOJAS",
     codigo: "NAT_AURA_VIT_SEC_AUR_LETRACAIXA_NOVO",
     nomePeca: "Letra Caixa",
     tamanho: "1,5x5,7",
@@ -37,6 +41,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — BSH (páginas 11–25) =====
   {
     pagina: 11,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_PAINEL_71x108cm",
     nomePeca: "Painel",
     tamanho: "71x108",
@@ -45,6 +50,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 12,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_LETRA_CAIXA_LOGO_48x31cm",
     nomePeca: "BSH Letra Caixa Logo",
     tamanho: "48x31",
@@ -53,6 +59,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 13,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_PLACA",
     nomePeca: "BSH Kit Placa",
     tamanho: "28x48",
@@ -61,6 +68,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 14,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_PLACA:3",
     nomePeca: "BSH Kit Placa (Letra Caixa)",
     tamanho: "10,5x35",
@@ -69,6 +77,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 15,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_MOCKUP_VIT_PRIM_NAU_BSH_MOLDURA_120x180cm",
     nomePeca: "BSH Moldura",
     tamanho: "120x180",
@@ -77,6 +86,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 16,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_SUPERIOR",
     nomePeca: "BSH Aplique Superior",
     tamanho: "78,2x157,1",
@@ -85,6 +95,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 17,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_SUPERIOR:2",
     nomePeca: "BSH Aplique 01",
     tamanho: "36x43,7",
@@ -93,6 +104,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 18,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_SUPERIOR:5",
     nomePeca: "BSH Aplique 02",
     tamanho: "37,8x48,9",
@@ -101,6 +113,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 19,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR",
     nomePeca: "BSH Aplique Inferior",
     tamanho: "75,5x131",
@@ -109,6 +122,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 20,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR:2",
     nomePeca: "BSH Aplique Inferior 01",
     tamanho: "46,5x48,5",
@@ -117,6 +131,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 21,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR:3",
     nomePeca: "BSH Aplique Inferior 02",
     tamanho: "41,4x51",
@@ -125,6 +140,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 22,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR:4",
     nomePeca: "BSH Aplique 01 e 02 (Verso)",
     tamanho: "23,5x40,5 / 38,6x51,1",
@@ -133,6 +149,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 24,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_ESTRUTURA_LARANJA",
     nomePeca: "BSH Estrutura Laranja",
     tamanho: "51,5x82,5",
@@ -141,6 +158,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 25,
+    secao: "FACHADA PRIMÁRIA — BSH",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_BASE_TOTEM",
     nomePeca: "BSH Base do Totem",
     tamanho: "30x104",
@@ -151,6 +169,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — ELD (página 27) =====
   {
     pagina: 27,
+    secao: "FACHADA PRIMÁRIA — ELD",
     codigo: "NAT_MAES_VIT_PRIM_AUR_ELD_PAINEL_FUNDO_260x225cm",
     nomePeca: "ELD Painel Fundo",
     tamanho: "260x225",
@@ -161,6 +180,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — SAS (páginas 29–31) =====
   {
     pagina: 29,
+    secao: "FACHADA PRIMÁRIA — SAS",
     codigo: "NAT_MAES_VIT_PRIM_AUR_SAS_PAINEL_94x150cm",
     nomePeca: "SAS Painel",
     tamanho: "94x150",
@@ -169,6 +189,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 30,
+    secao: "FACHADA PRIMÁRIA — SAS",
     codigo: "NAT_MAES_VIT_PRIM_AUR_SAS_LETRA_CAIXA_55x35,7cm",
     nomePeca: "SAS Letra Caixa",
     tamanho: "55x35,7",
@@ -177,6 +198,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 31,
+    secao: "FACHADA PRIMÁRIA — SAS",
     codigo: "NAT_MAES_VIT_PRIM_AUR_SAS_KIT_APLIQUES",
     nomePeca: "SAS Kit Apliques",
     tamanho: "87,8x97 / 63,8x114,3",
@@ -187,6 +209,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — BAL (página 33) =====
   {
     pagina: 33,
+    secao: "FACHADA PRIMÁRIA — BAL",
     codigo: "NAT_MAES_VIT_PRIM_AUR_BAL_PAINEL_70x123cm",
     nomePeca: "BAL Painel",
     tamanho: "70x123",
@@ -197,6 +220,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — VIV (página 35) =====
   {
     pagina: 35,
+    secao: "FACHADA PRIMÁRIA — VIV",
     codigo: "NAT_MAES_VIT_PRIM_AUR_VIV_PAINEL_60x144cm",
     nomePeca: "VIV Painel",
     tamanho: "60x144",
@@ -207,6 +231,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — NASP (páginas 37–42) =====
   {
     pagina: 37,
+    secao: "FACHADA PRIMÁRIA — NASP",
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_KIT_PAINEL_FUNDO_LATERAIS",
     nomePeca: "NASP Kit Painel Fundo Laterais",
     tamanho: "122x220",
@@ -215,6 +240,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 38,
+    secao: "FACHADA PRIMÁRIA — NASP",
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_PAINEL_CENTRAL_401x241cm",
     nomePeca: "NASP Painel Central",
     tamanho: "401x241",
@@ -223,6 +249,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 39,
+    secao: "FACHADA PRIMÁRIA — NASP",
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_LETRA_CAIXA_CLAIM",
     nomePeca: "NASP Letra Caixa Claim",
     tamanho: "65,4x19,5 / 59,5x91,6",
@@ -231,6 +258,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 40,
+    secao: "FACHADA PRIMÁRIA — NASP",
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_KIT_APLIQUES",
     nomePeca: "NASP Kit Apliques",
     tamanho: "102,5x151,8 / 92,5x183 / 59x72,5",
@@ -239,6 +267,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 41,
+    secao: "FACHADA PRIMÁRIA — NASP",
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_KIT_APLIQUES:5",
     nomePeca: "NASP Sobre Apliques",
     tamanho: "47,8x59,5",
@@ -247,6 +276,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 42,
+    secao: "FACHADA PRIMÁRIA — NASP",
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_PAINEL_ILUMINADO_136,8x205cm",
     nomePeca: "NASP Painel Iluminado",
     tamanho: "136,8x205",
@@ -257,6 +287,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA PRIMÁRIA — BSA (páginas 44–46) =====
   {
     pagina: 44,
+    secao: "FACHADA PRIMÁRIA — BSA",
     codigo: "NAT_MAES_VIT_AUR_BSA_PAINEL_103x133,5cm",
     nomePeca: "BSA Painel",
     tamanho: "103x133,5",
@@ -265,6 +296,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 45,
+    secao: "FACHADA PRIMÁRIA — BSA",
     codigo: "NAT_MAES_VIT_AUR_BSA_LETRA_CAIXA_56,2x36,3cm",
     nomePeca: "BSA Letra Caixa",
     tamanho: "56,2x36,3",
@@ -273,6 +305,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 46,
+    secao: "FACHADA PRIMÁRIA — BSA",
     codigo: "NAT_MAES_VIT_AUR_BSA_KIT_APLIQUES",
     nomePeca: "BSA Kit Apliques",
     tamanho: "77,6x87 / 57,7x96,2",
@@ -283,6 +316,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA — MNS SIF (página 48) =====
   {
     pagina: 48,
+    secao: "FACHADA — MNS SIF",
     codigo: "NAT_MAES_VIT_NAU_PAINEL_MNS_SIF_290x144cm",
     nomePeca: "MNS SIF Painel",
     tamanho: "290x144",
@@ -293,6 +327,7 @@ export const extractedPieces: Piece[] = [
   // ===== FACHADA — CJN SHR (página 50) =====
   {
     pagina: 50,
+    secao: "FACHADA — CJN SHR",
     codigo: "NAT_MAES_VIT_NAU_PAINEL_CJN_SHR_120x144cm",
     nomePeca: "CJN SHR Painel",
     tamanho: "120x144",
@@ -303,6 +338,7 @@ export const extractedPieces: Piece[] = [
   // ===== SECUNDÁRIA — BSH (páginas 53–56) =====
   {
     pagina: 53,
+    secao: "SECUNDÁRIA — BSH",
     codigo: "NAT_MAES_VIT_SEC_AUR_BSH_PAINEL_37,9x67cm",
     nomePeca: "BSH Painel (Secundária)",
     tamanho: "37,9x67",
@@ -311,6 +347,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 54,
+    secao: "SECUNDÁRIA — BSH",
     codigo: "NAT_MAES_VIT_SEC_AUR_BSH_KIT_APLIQUES",
     nomePeca: "BSH Kit Apliques (Secundária)",
     tamanho: "22x89 / 19,6x57 / 23,7x21,3",
@@ -319,6 +356,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 55,
+    secao: "SECUNDÁRIA — BSH",
     codigo: "NAT_MAES_VIT_SEC_AUR_BSH_LETRA_CAIXA_25,6x16,5cm",
     nomePeca: "BSH Letra Caixa (Secundária)",
     tamanho: "25,6x16,5",
@@ -327,6 +365,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 56,
+    secao: "SECUNDÁRIA — BSH",
     codigo: "NAT_MAES_VIT_SEC_AUR_BSH_ARO_58,1x87cm",
     nomePeca: "BSH Aro (Secundária)",
     tamanho: "58,1x87",
@@ -337,6 +376,7 @@ export const extractedPieces: Piece[] = [
   // ===== SECUNDÁRIA — RMR (páginas 58–61) =====
   {
     pagina: 58,
+    secao: "SECUNDÁRIA — RMR",
     codigo: "NAT_MAES_VIT_SEC_AUR_RMR_PAINEL_56x99cm",
     nomePeca: "RMR Painel",
     tamanho: "56x99",
@@ -345,6 +385,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 59,
+    secao: "SECUNDÁRIA — RMR",
     codigo: "NAT_MAES_VIT_SEC_AUR_RMR_KIT_APLIQUES",
     nomePeca: "RMR Kit Apliques",
     tamanho: "32x132,5 / 29x84,7 / 35x31,6",
@@ -353,6 +394,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 60,
+    secao: "SECUNDÁRIA — RMR",
     codigo: "NAT_MAES_VIT_SEC_AUR_RMR_LETRA_CAIXA_38x24,5cm",
     nomePeca: "RMR Letra Caixa",
     tamanho: "38x24,5",
@@ -361,6 +403,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 61,
+    secao: "SECUNDÁRIA — RMR",
     codigo: "NAT_MAES_VIT_SEC_AUR_RMR_ARO_86x129cm",
     nomePeca: "RMR Aro",
     tamanho: "86x129",
@@ -371,6 +414,7 @@ export const extractedPieces: Piece[] = [
   // ===== SECUNDÁRIA — SAS (páginas 63–66) =====
   {
     pagina: 63,
+    secao: "SECUNDÁRIA — SAS",
     codigo: "NAT_MAES_VIT_SEC_AUR_SAS_PAINEL_56x99cm",
     nomePeca: "SAS Painel (Secundária)",
     tamanho: "56x99",
@@ -379,6 +423,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 64,
+    secao: "SECUNDÁRIA — SAS",
     codigo: "NAT_MAES_VIT_SEC_AUR_SAS_KIT_APLIQUES",
     nomePeca: "SAS Kit Apliques (Secundária)",
     tamanho: "32x132,5 / 29x84,7 / 35x31,6",
@@ -387,6 +432,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 65,
+    secao: "SECUNDÁRIA — SAS",
     codigo: "NAT_MAES_VIT_SEC_AUR_SAS_LETRA_CAIXA_38x24,5cm",
     nomePeca: "SAS Letra Caixa (Secundária)",
     tamanho: "38x24,5",
@@ -395,6 +441,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 66,
+    secao: "SECUNDÁRIA — SAS",
     codigo: "NAT_MAES_VIT_SEC_AUR_SAS_ARO_86x129cm",
     nomePeca: "SAS Aro",
     tamanho: "86x129",
@@ -405,6 +452,7 @@ export const extractedPieces: Piece[] = [
   // ===== SECUNDÁRIA — BRB (página 68) =====
   {
     pagina: 68,
+    secao: "SECUNDÁRIA — BRB",
     codigo: "NAT_MAES_VIT_SEC_NAU_PAINEL_BRB_63x240cm",
     nomePeca: "BRB Painel",
     tamanho: "63x240",
@@ -415,6 +463,7 @@ export const extractedPieces: Piece[] = [
   // ===== BACKLIGHT PRIMÁRIA (páginas 70–74) =====
   {
     pagina: 70,
+    secao: "BACKLIGHT PRIMÁRIA",
     codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_P_60x104cm",
     nomePeca: "Backlight P",
     tamanho: "60x104",
@@ -423,6 +472,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 71,
+    secao: "BACKLIGHT PRIMÁRIA",
     codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_M_100x150cm",
     nomePeca: "Backlight M",
     tamanho: "100x150",
@@ -431,6 +481,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 72,
+    secao: "BACKLIGHT PRIMÁRIA",
     codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_G_120x180cm",
     nomePeca: "Backlight G",
     tamanho: "120x180",
@@ -439,6 +490,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 73,
+    secao: "BACKLIGHT PRIMÁRIA",
     codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_CGR_50x82cm",
     nomePeca: "Backlight CGR",
     tamanho: "50x82",
@@ -447,6 +499,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 74,
+    secao: "BACKLIGHT PRIMÁRIA",
     codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_MUE_60x105cm",
     nomePeca: "Backlight MUE",
     tamanho: "60x105",
@@ -457,6 +510,7 @@ export const extractedPieces: Piece[] = [
   // ===== BACKLIGHT SECUNDÁRIA (páginas 76–79) =====
   {
     pagina: 76,
+    secao: "BACKLIGHT SECUNDÁRIA",
     codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_P_60x104cm",
     nomePeca: "Backlight Secundária P",
     tamanho: "60x104",
@@ -465,6 +519,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 77,
+    secao: "BACKLIGHT SECUNDÁRIA",
     codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_M_100x150cm",
     nomePeca: "Backlight Secundária M",
     tamanho: "100x150",
@@ -473,6 +528,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 78,
+    secao: "BACKLIGHT SECUNDÁRIA",
     codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_CGR_50x82cm",
     nomePeca: "Backlight Secundária CGR",
     tamanho: "50x82",
@@ -481,6 +537,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 79,
+    secao: "BACKLIGHT SECUNDÁRIA",
     codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_MUE_60x105cm",
     nomePeca: "Backlight Secundária MUE",
     tamanho: "60x105",
@@ -491,6 +548,7 @@ export const extractedPieces: Piece[] = [
   // ===== INTERNOS — PONTO NATURAL (páginas 83–87) =====
   {
     pagina: 83,
+    secao: "INTERNOS — PONTO NATURAL",
     codigo: "NAT_MAES_INT_AUR_PONTO_NATURAL_TESTEIRA_17,5x20cm",
     nomePeca: "Ponto Natural Testeira",
     tamanho: "17,5x20",
@@ -499,6 +557,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 84,
+    secao: "INTERNOS — PONTO NATURAL",
     codigo: "NAT_MAES_INT_AUR_PONTO_NATURAL_KIT_SHELFS_25x4cm",
     nomePeca: "Ponto Natural Kit Shelfs",
     tamanho: "25x4",
@@ -507,6 +566,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 86,
+    secao: "INTERNOS — PONTO NATURAL",
     codigo: "NAT_MAES_INT_AUR_PONTO_NATURAL_LUMINA_TESTEIRA_35x32cm",
     nomePeca: "Ponto Natural Lumina Testeira",
     tamanho: "35x32",
@@ -517,6 +577,7 @@ export const extractedPieces: Piece[] = [
   // ===== INTERNOS — PONTO DE MESA (páginas 89–92) =====
   {
     pagina: 89,
+    secao: "INTERNOS — PONTO DE MESA",
     codigo: "NAT_MAES_INT_AUR_PONTA_MESA_KIT_TESTEIRA:2",
     nomePeca: "Ponta Mesa Kit Testeira",
     tamanho: "22,5x18",
@@ -525,6 +586,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 90,
+    secao: "INTERNOS — PONTO DE MESA",
     codigo: "NAT_MAES_INT_AUR_PONTA_MESA_KIT_TESTEIRA",
     nomePeca: "Ponta Mesa Kit Testeira (Arranjo)",
     tamanho: "52,4x26,2",
@@ -533,6 +595,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 92,
+    secao: "INTERNOS — PONTO DE MESA",
     codigo: "NAT_MAES_INT_AUR_PONTA_MESA_FACA_BASE_VERDE_54,5x4cm",
     nomePeca: "Ponta Mesa Faca Base Verde",
     tamanho: "54,5x4",
@@ -543,6 +606,7 @@ export const extractedPieces: Piece[] = [
   // ===== INTERNOS — PANCARTAS MSP (página 95) =====
   {
     pagina: 95,
+    secao: "INTERNOS — PANCARTAS MSP",
     codigo: "NAT_MAES_INT_AUR_KIT_BAND_OVAL_MSP_9,7x17,3cm",
     nomePeca: "Kit Band Oval MSP",
     tamanho: "9,7x17,3",
@@ -553,6 +617,7 @@ export const extractedPieces: Piece[] = [
   // ===== INTERNOS — WELCOME TABLE (páginas 97–101) =====
   {
     pagina: 97,
+    secao: "INTERNOS — WELCOME TABLE",
     codigo: "NAT_MAES_INT_AUR_WT_ARRANJO_52,4x26,2cm",
     nomePeca: "WT Arranjo",
     tamanho: "52,4x26,2",
@@ -561,6 +626,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 98,
+    secao: "INTERNOS — WELCOME TABLE",
     codigo: "NAT_MAES_INT_AUR_WT_FOTO_25x28cm",
     nomePeca: "WT Foto",
     tamanho: "25x28",
@@ -569,6 +635,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 99,
+    secao: "INTERNOS — WELCOME TABLE",
     codigo: "NAT_MAES_INT_AUR_WT_KIT_APLIQUE_CTA",
     nomePeca: "WT Kit Aplique CTA",
     tamanho: "19x14",
@@ -577,6 +644,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 101,
+    secao: "INTERNOS — WELCOME TABLE",
     codigo: "NAT_MAES_INT_AUR_WT_FACA_BASE_VERDE_76,5x4cm",
     nomePeca: "WT Faca Base Verde",
     tamanho: "76,5x4",
@@ -587,6 +655,7 @@ export const extractedPieces: Piece[] = [
   // ===== INTERNOS — MÓVEL CLÁSSICO (páginas 103–105) =====
   {
     pagina: 103,
+    secao: "INTERNOS — MÓVEL CLÁSSICO",
     codigo: "NAT_MAES_INT_AUR_MVCLASS_TEST_P_59,5x11,5cm",
     nomePeca: "MV Clássico Testeira P",
     tamanho: "59,5x11,5",
@@ -595,6 +664,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 104,
+    secao: "INTERNOS — MÓVEL CLÁSSICO",
     codigo: "NAT_MAES_INT_AUR_MV_CLASS_TEST_G_90x15cm",
     nomePeca: "MV Clássico Testeira G",
     tamanho: "90x15",
@@ -605,6 +675,7 @@ export const extractedPieces: Piece[] = [
   // ===== INTERNOS — BTG & MP (páginas 108–109) =====
   {
     pagina: 108,
+    secao: "INTERNOS — BTG & MP",
     codigo: "NAT_MAES_INT_NAU_BTG_KIT_BAND_OVAL_11,5x23,4cm",
     nomePeca: "BTG Kit Band Oval",
     tamanho: "11,5x23,4",
@@ -613,6 +684,7 @@ export const extractedPieces: Piece[] = [
   },
   {
     pagina: 109,
+    secao: "INTERNOS — BTG & MP",
     codigo: "NAT_MAES_INT_NAU_MP_KIT_BAND_OVAL_14,5x29,5cm",
     nomePeca: "MP Kit Band Oval",
     tamanho: "14,5x29,5",
