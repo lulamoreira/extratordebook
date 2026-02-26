@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -24,66 +25,95 @@ const Index = () => {
   const [fileName, setFileName] = useState("");
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<Piece | null>(null);
+  const [processingFiles, setProcessingFiles] = useState<{ name: string; status: "pending" | "processing" | "done" | "error" }[]>([]);
+
+  const processOnePdf = async (file: File): Promise<Piece[]> => {
+    const buffer = await file.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+    );
+
+    const { data, error } = await supabase.functions.invoke("extract-pdf", {
+      body: { pdfBase64: base64, fileName: file.name },
+    });
+
+    if (error) throw new Error(error.message || "Erro ao processar PDF");
+
+    if (data?.pieces && Array.isArray(data.pieces)) {
+      return data.pieces.map((p: any) => ({
+        pagina: p.pagina || 0,
+        secao: p.secao || "",
+        codigo: p.codigo || "",
+        nomePeca: p.nomePeca || "",
+        tamanho: p.tamanho || "",
+        especificacao: p.especificacao || "",
+        cores: p.cores || "4x0",
+      }));
+    }
+    throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
+  };
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      toast.error("Por favor, envie um arquivo PDF.");
-      return;
-    }
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("O arquivo é muito grande (máximo 20MB).");
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const invalidFiles = files.filter((f) => f.type !== "application/pdf");
+    if (invalidFiles.length > 0) {
+      toast.error("Apenas arquivos PDF são aceitos.");
       return;
     }
 
-    setFileName(file.name);
+    const oversized = files.filter((f) => f.size > 20 * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`Arquivo(s) muito grande(s) (máx. 20MB): ${oversized.map((f) => f.name).join(", ")}`);
+      return;
+    }
+
+    setFileName(files.map((f) => f.name).join(", "));
     setIsExtracting(true);
-    setProgress(10);
+    setProgress(5);
 
-    try {
-      const buffer = await file.arrayBuffer();
-      const base64 = btoa(
-        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+    const fileStatuses = files.map((f) => ({ name: f.name, status: "pending" as const }));
+    setProcessingFiles(fileStatuses);
+
+    let allPieces: Piece[] = [...pieces];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      setProcessingFiles((prev) =>
+        prev.map((f, idx) => (idx === i ? { ...f, status: "processing" } : f))
       );
+      setProgress(Math.round(((i) / files.length) * 90) + 5);
 
-      setProgress(30);
-
-      const { data, error } = await supabase.functions.invoke("extract-pdf", {
-        body: { pdfBase64: base64, fileName: file.name },
-      });
-
-      setProgress(90);
-
-      if (error) {
-        throw new Error(error.message || "Erro ao processar PDF");
+      try {
+        const extracted = await processOnePdf(files[i]);
+        allPieces = [...allPieces, ...extracted];
+        successCount += extracted.length;
+        setProcessingFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, status: "done" } : f))
+        );
+      } catch (err: any) {
+        console.error(`Error processing ${files[i].name}:`, err);
+        errorCount++;
+        setProcessingFiles((prev) =>
+          prev.map((f, idx) => (idx === i ? { ...f, status: "error" } : f))
+        );
+        toast.error(`Erro em "${files[i].name}": ${err.message}`);
       }
-
-      if (data?.pieces && Array.isArray(data.pieces)) {
-        const mappedPieces: Piece[] = data.pieces.map((p: any) => ({
-          pagina: p.pagina || 0,
-          secao: p.secao || "",
-          codigo: p.codigo || "",
-          nomePeca: p.nomePeca || "",
-          tamanho: p.tamanho || "",
-          especificacao: p.especificacao || "",
-          cores: p.cores || "4x0",
-        }));
-        setPieces(mappedPieces);
-        toast.success(`${mappedPieces.length} peças extraídas com sucesso!`);
-      } else {
-        throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
-      }
-    } catch (err: any) {
-      console.error("Extraction error:", err);
-      toast.error(err.message || "Erro ao extrair dados do PDF");
-    } finally {
-      setIsExtracting(false);
-      setProgress(100);
-      // Reset file input
-      e.target.value = "";
     }
-  }, []);
+
+    setPieces(allPieces);
+    setProgress(100);
+    setIsExtracting(false);
+
+    if (successCount > 0) {
+      toast.success(`${successCount} peças extraídas de ${files.length - errorCount} PDF(s)!`);
+    }
+
+    setTimeout(() => setProcessingFiles([]), 3000);
+    e.target.value = "";
+  }, [pieces]);
 
   const handleDownload = () => {
     if (pieces.length === 0) return;
@@ -158,6 +188,18 @@ const Index = () => {
           </p>
         </div>
 
+        {/* Warning */}
+        <Alert className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
+          <AlertTriangle className="h-5 w-5 text-amber-600" />
+          <AlertTitle className="text-amber-800 dark:text-amber-400 font-bold text-base">
+            Limite de 50 páginas por PDF
+          </AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-300">
+            Cada arquivo PDF deve ter <strong>no máximo 50 páginas</strong>. Se o seu book tiver mais de 50 páginas,
+            separe-o em partes menores antes de enviar. Você pode enviar <strong>múltiplos PDFs de uma vez</strong> e todas as peças serão consolidadas em uma única tabela.
+          </AlertDescription>
+        </Alert>
+
         {/* Upload Area */}
         {pieces.length === 0 && !isExtracting && (
           <Card className="mb-8 border-dashed border-2">
@@ -166,20 +208,21 @@ const Index = () => {
                 <Upload className="h-8 w-8 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <p className="text-lg font-medium text-foreground">Envie o PDF do Book</p>
-                <p className="text-sm text-muted-foreground">Arraste ou clique para selecionar (máx. 20MB)</p>
+                <p className="text-lg font-medium text-foreground">Envie os PDFs do Book</p>
+                <p className="text-sm text-muted-foreground">Selecione um ou vários PDFs (máx. 20MB cada)</p>
               </div>
               <label>
                 <input
                   type="file"
                   accept=".pdf"
+                  multiple
                   onChange={handleFileUpload}
                   className="hidden"
                 />
                 <Button asChild className="gap-2 cursor-pointer">
                   <span>
                     <FileText className="h-4 w-4" />
-                    Selecionar PDF
+                    Selecionar PDF(s)
                   </span>
                 </Button>
               </label>
@@ -191,13 +234,28 @@ const Index = () => {
         {isExtracting && (
           <Card className="mb-8">
             <CardContent className="py-8">
-              <div className="flex flex-col gap-3 items-center">
+              <div className="flex flex-col gap-4 items-center">
                 <div className="animate-pulse text-primary font-medium">
-                  Extraindo peças de "{fileName}"...
+                  Extraindo peças...
                 </div>
                 <Progress value={progress} className="max-w-md" />
+                {processingFiles.length > 0 && (
+                  <div className="w-full max-w-md space-y-1">
+                    {processingFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        {f.status === "pending" && <span className="text-muted-foreground">⏳</span>}
+                        {f.status === "processing" && <span className="animate-spin">⚙️</span>}
+                        {f.status === "done" && <span className="text-green-600">✅</span>}
+                        {f.status === "error" && <span className="text-destructive">❌</span>}
+                        <span className={f.status === "processing" ? "font-medium text-foreground" : "text-muted-foreground"}>
+                          {f.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Isso pode levar até 1 minuto dependendo do tamanho do PDF
+                  Isso pode levar até 1 minuto por PDF
                 </p>
               </div>
             </CardContent>
@@ -219,13 +277,14 @@ const Index = () => {
                   <input
                     type="file"
                     accept=".pdf"
+                    multiple
                     onChange={handleFileUpload}
                     className="hidden"
                   />
                   <Button variant="outline" asChild className="gap-2 cursor-pointer" size="sm">
                     <span>
                       <Upload className="h-4 w-4" />
-                      Novo PDF
+                      Adicionar PDF(s)
                     </span>
                   </Button>
                 </label>
