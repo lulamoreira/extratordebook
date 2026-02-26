@@ -45,7 +45,7 @@ const Index = () => {
               Natura Aurora — Mães 2026
             </h1>
             <p className="text-sm text-muted-foreground">
-              {extractedPieces.length} peças extraídas (páginas 1–50 de 110)
+              {extractedPieces.length} peças extraídas (páginas 1–110)
             </p>
           </div>
           <Button onClick={handleDownload} className="gap-2">
@@ -86,9 +86,7 @@ const Index = () => {
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          ⚠️ O PDF tem 110 páginas. Apenas as primeiras 50 foram processadas.
-          As páginas restantes (51–110) precisam ser enviadas separadamente ou
-          o PDF dividido em partes menores.
+          ✅ Todas as 110 páginas do PDF foram processadas.
         </p>
       </div>
     </div>

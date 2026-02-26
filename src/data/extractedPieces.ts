@@ -8,6 +8,7 @@ export interface Piece {
 }
 
 export const extractedPieces: Piece[] = [
+  // ===== VITRINES — TODAS AS LOJAS (páginas 4–7) =====
   {
     pagina: 4,
     codigo: "NAT_MAES_VIT_AUR_TDS_TESTEIRA_AURA_30x24cm",
@@ -32,6 +33,8 @@ export const extractedPieces: Piece[] = [
     especificacao: "Letra-caixa pintada na cor branca. Considerar base transparente em acrílico para sustentação. NOVO",
     cores: "4x0",
   },
+
+  // ===== FACHADA PRIMÁRIA — BSH (páginas 11–25) =====
   {
     pagina: 11,
     codigo: "NAT_MAES_VIT_PRIM_AUR_PAINEL_71x108cm",
@@ -75,7 +78,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 16,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_SUPERIOR",
-    nomePeca: "Aplique Superior",
+    nomePeca: "BSH Aplique Superior",
     tamanho: "78,2x157,1",
     especificacao: "Aplique Superior com reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
@@ -83,7 +86,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 17,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_SUPERIOR:2",
-    nomePeca: "Aplique 01",
+    nomePeca: "BSH Aplique 01",
     tamanho: "36x43,7",
     especificacao: "",
     cores: "4x4",
@@ -91,7 +94,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 18,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_SUPERIOR:5",
-    nomePeca: "Aplique 02",
+    nomePeca: "BSH Aplique 02",
     tamanho: "37,8x48,9",
     especificacao: "Aplique 02 com reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
@@ -99,7 +102,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 19,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR",
-    nomePeca: "Aplique Inferior",
+    nomePeca: "BSH Aplique Inferior",
     tamanho: "75,5x131",
     especificacao: "",
     cores: "4x4",
@@ -107,7 +110,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 20,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR:2",
-    nomePeca: "Aplique Inferior 01",
+    nomePeca: "BSH Aplique Inferior 01",
     tamanho: "46,5x48,5",
     especificacao: "Aplique 01 com reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
@@ -115,7 +118,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 21,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR:3",
-    nomePeca: "Aplique Inferior 02",
+    nomePeca: "BSH Aplique Inferior 02",
     tamanho: "41,4x51",
     especificacao: "Aplique 02 com reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
@@ -123,7 +126,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 22,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_KIT_APLIQUE_INFERIOR:4",
-    nomePeca: "Aplique 01 e 02 (Verso)",
+    nomePeca: "BSH Aplique 01 e 02 (Verso)",
     tamanho: "23,5x40,5 / 38,6x51,1",
     especificacao: "",
     cores: "4x4",
@@ -131,7 +134,7 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 24,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_ESTRUTURA_LARANJA",
-    nomePeca: "Estrutura Laranja",
+    nomePeca: "BSH Estrutura Laranja",
     tamanho: "51,5x82,5",
     especificacao: "Com pintura total na cor PANTONE 1585 C. Todas as bandejas com iluminação luz branca quente",
     cores: "4x0",
@@ -139,11 +142,13 @@ export const extractedPieces: Piece[] = [
   {
     pagina: 25,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BSH_BASE_TOTEM",
-    nomePeca: "Base do Totem",
+    nomePeca: "BSH Base do Totem",
     tamanho: "30x104",
     especificacao: "Com pintura total na cor PANTONE 342 C. Altura: 2,5cm",
     cores: "4x0",
   },
+
+  // ===== FACHADA PRIMÁRIA — ELD (página 27) =====
   {
     pagina: 27,
     codigo: "NAT_MAES_VIT_PRIM_AUR_ELD_PAINEL_FUNDO_260x225cm",
@@ -152,6 +157,8 @@ export const extractedPieces: Piece[] = [
     especificacao: "",
     cores: "4x0",
   },
+
+  // ===== FACHADA PRIMÁRIA — SAS (páginas 29–31) =====
   {
     pagina: 29,
     codigo: "NAT_MAES_VIT_PRIM_AUR_SAS_PAINEL_94x150cm",
@@ -176,22 +183,28 @@ export const extractedPieces: Piece[] = [
     especificacao: "Apliques com reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
   },
+
+  // ===== FACHADA PRIMÁRIA — BAL (página 33) =====
   {
     pagina: 33,
     codigo: "NAT_MAES_VIT_PRIM_AUR_BAL_PAINEL_70x123cm",
     nomePeca: "BAL Painel",
     tamanho: "70x123",
-    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
   },
+
+  // ===== FACHADA PRIMÁRIA — VIV (página 35) =====
   {
     pagina: 35,
     codigo: "NAT_MAES_VIT_PRIM_AUR_VIV_PAINEL_60x144cm",
     nomePeca: "VIV Painel",
     tamanho: "60x144",
-    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
   },
+
+  // ===== FACHADA PRIMÁRIA — NASP (páginas 37–42) =====
   {
     pagina: 37,
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_KIT_PAINEL_FUNDO_LATERAIS",
@@ -225,6 +238,14 @@ export const extractedPieces: Piece[] = [
     cores: "4x4",
   },
   {
+    pagina: 41,
+    codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_KIT_APLIQUES:5",
+    nomePeca: "NASP Sobre Apliques",
+    tamanho: "47,8x59,5",
+    especificacao: "Apliques com reserva para Hot Stamping Dourado (reserva no arquivo)",
+    cores: "4x4",
+  },
+  {
     pagina: 42,
     codigo: "NAT_MAES_VIT_PRIM_AUR_NASP_PAINEL_ILUMINADO_136,8x205cm",
     nomePeca: "NASP Painel Iluminado",
@@ -232,6 +253,8 @@ export const extractedPieces: Piece[] = [
     especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Painel retroiluminado luz branca quente",
     cores: "4x0",
   },
+
+  // ===== FACHADA PRIMÁRIA — BSA (páginas 44–46) =====
   {
     pagina: 44,
     codigo: "NAT_MAES_VIT_AUR_BSA_PAINEL_103x133,5cm",
@@ -256,20 +279,344 @@ export const extractedPieces: Piece[] = [
     especificacao: "Apliques com reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
   },
+
+  // ===== FACHADA — MNS SIF (página 48) =====
   {
     pagina: 48,
     codigo: "NAT_MAES_VIT_NAU_PAINEL_MNS_SIF_290x144cm",
     nomePeca: "MNS SIF Painel",
     tamanho: "290x144",
-    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
   },
+
+  // ===== FACHADA — CJN SHR (página 50) =====
   {
     pagina: 50,
     codigo: "NAT_MAES_VIT_NAU_PAINEL_CJN_SHR_120x144cm",
     nomePeca: "CJN SHR Painel",
     tamanho: "120x144",
-    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis. Reserva para Hot Stamping Dourado (reserva no arquivo)",
     cores: "4x4",
+  },
+
+  // ===== SECUNDÁRIA — BSH (páginas 53–56) =====
+  {
+    pagina: 53,
+    codigo: "NAT_MAES_VIT_SEC_AUR_BSH_PAINEL_37,9x67cm",
+    nomePeca: "BSH Painel (Secundária)",
+    tamanho: "37,9x67",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis",
+    cores: "4x4",
+  },
+  {
+    pagina: 54,
+    codigo: "NAT_MAES_VIT_SEC_AUR_BSH_KIT_APLIQUES",
+    nomePeca: "BSH Kit Apliques (Secundária)",
+    tamanho: "22x89 / 19,6x57 / 23,7x21,3",
+    especificacao: "Apliques com reserva para Hot Stamping Dourado (reserva no arquivo). Aplique fundo vai atrás do painel e na frente do aro",
+    cores: "4x4",
+  },
+  {
+    pagina: 55,
+    codigo: "NAT_MAES_VIT_SEC_AUR_BSH_LETRA_CAIXA_25,6x16,5cm",
+    nomePeca: "BSH Letra Caixa (Secundária)",
+    tamanho: "25,6x16,5",
+    especificacao: "Letra-caixa na cor indicada no código de cores. PANTONE 9081 C",
+    cores: "4x0",
+  },
+  {
+    pagina: 56,
+    codigo: "NAT_MAES_VIT_SEC_AUR_BSH_ARO_58,1x87cm",
+    nomePeca: "BSH Aro (Secundária)",
+    tamanho: "58,1x87",
+    especificacao: "Estrutura tubular de 2cm de diâmetro. Com pintura total na cor PANTONE 342 C",
+    cores: "4x0",
+  },
+
+  // ===== SECUNDÁRIA — RMR (páginas 58–61) =====
+  {
+    pagina: 58,
+    codigo: "NAT_MAES_VIT_SEC_AUR_RMR_PAINEL_56x99cm",
+    nomePeca: "RMR Painel",
+    tamanho: "56x99",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis",
+    cores: "4x4",
+  },
+  {
+    pagina: 59,
+    codigo: "NAT_MAES_VIT_SEC_AUR_RMR_KIT_APLIQUES",
+    nomePeca: "RMR Kit Apliques",
+    tamanho: "32x132,5 / 29x84,7 / 35x31,6",
+    especificacao: "Apliques com reserva para Hot Stamping Dourado (reserva no arquivo). Aplique fundo vai atrás do painel e na frente do aro",
+    cores: "4x4",
+  },
+  {
+    pagina: 60,
+    codigo: "NAT_MAES_VIT_SEC_AUR_RMR_LETRA_CAIXA_38x24,5cm",
+    nomePeca: "RMR Letra Caixa",
+    tamanho: "38x24,5",
+    especificacao: "Letra-caixa na cor indicada no código de cores. PANTONE 9081 C",
+    cores: "4x0",
+  },
+  {
+    pagina: 61,
+    codigo: "NAT_MAES_VIT_SEC_AUR_RMR_ARO_86x129cm",
+    nomePeca: "RMR Aro",
+    tamanho: "86x129",
+    especificacao: "Estrutura tubular de 2cm de diâmetro. Com pintura total na cor PANTONE 342 C",
+    cores: "4x0",
+  },
+
+  // ===== SECUNDÁRIA — SAS (páginas 63–66) =====
+  {
+    pagina: 63,
+    codigo: "NAT_MAES_VIT_SEC_AUR_SAS_PAINEL_56x99cm",
+    nomePeca: "SAS Painel (Secundária)",
+    tamanho: "56x99",
+    especificacao: "Contemplar furos de 0,3cm para fixação dos painéis",
+    cores: "4x4",
+  },
+  {
+    pagina: 64,
+    codigo: "NAT_MAES_VIT_SEC_AUR_SAS_KIT_APLIQUES",
+    nomePeca: "SAS Kit Apliques (Secundária)",
+    tamanho: "32x132,5 / 29x84,7 / 35x31,6",
+    especificacao: "Apliques com reserva para Hot Stamping Dourado (reserva no arquivo). Aplique fundo vai atrás do painel e na frente do aro",
+    cores: "4x4",
+  },
+  {
+    pagina: 65,
+    codigo: "NAT_MAES_VIT_SEC_AUR_SAS_LETRA_CAIXA_38x24,5cm",
+    nomePeca: "SAS Letra Caixa (Secundária)",
+    tamanho: "38x24,5",
+    especificacao: "Letra-caixa na cor indicada no PANTONE 9081 C",
+    cores: "4x0",
+  },
+  {
+    pagina: 66,
+    codigo: "NAT_MAES_VIT_SEC_AUR_SAS_ARO_86x129cm",
+    nomePeca: "SAS Aro",
+    tamanho: "86x129",
+    especificacao: "Estrutura tubular de 2cm de diâmetro. Com pintura total na cor PANTONE 342 C",
+    cores: "4x0",
+  },
+
+  // ===== SECUNDÁRIA — BRB (página 68) =====
+  {
+    pagina: 68,
+    codigo: "NAT_MAES_VIT_SEC_NAU_PAINEL_BRB_63x240cm",
+    nomePeca: "BRB Painel",
+    tamanho: "63x240",
+    especificacao: "",
+    cores: "4x0",
+  },
+
+  // ===== BACKLIGHT PRIMÁRIA (páginas 70–74) =====
+  {
+    pagina: 70,
+    codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_P_60x104cm",
+    nomePeca: "Backlight P",
+    tamanho: "60x104",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 71,
+    codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_M_100x150cm",
+    nomePeca: "Backlight M",
+    tamanho: "100x150",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 72,
+    codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_G_120x180cm",
+    nomePeca: "Backlight G",
+    tamanho: "120x180",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 73,
+    codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_CGR_50x82cm",
+    nomePeca: "Backlight CGR",
+    tamanho: "50x82",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 74,
+    codigo: "NAT_MAES_VIT_PRIM_BACKLIGHT_MUE_60x105cm",
+    nomePeca: "Backlight MUE",
+    tamanho: "60x105",
+    especificacao: "",
+    cores: "4x0",
+  },
+
+  // ===== BACKLIGHT SECUNDÁRIA (páginas 76–79) =====
+  {
+    pagina: 76,
+    codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_P_60x104cm",
+    nomePeca: "Backlight Secundária P",
+    tamanho: "60x104",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 77,
+    codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_M_100x150cm",
+    nomePeca: "Backlight Secundária M",
+    tamanho: "100x150",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 78,
+    codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_CGR_50x82cm",
+    nomePeca: "Backlight Secundária CGR",
+    tamanho: "50x82",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 79,
+    codigo: "NAT_MAES_VIT_SEC_BACKLIGHT_MUE_60x105cm",
+    nomePeca: "Backlight Secundária MUE",
+    tamanho: "60x105",
+    especificacao: "",
+    cores: "4x0",
+  },
+
+  // ===== INTERNOS — PONTO NATURAL (páginas 83–87) =====
+  {
+    pagina: 83,
+    codigo: "NAT_MAES_INT_AUR_PONTO_NATURAL_TESTEIRA_17,5x20cm",
+    nomePeca: "Ponto Natural Testeira",
+    tamanho: "17,5x20",
+    especificacao: "Testeira autoportante",
+    cores: "4x4",
+  },
+  {
+    pagina: 84,
+    codigo: "NAT_MAES_INT_AUR_PONTO_NATURAL_KIT_SHELFS_25x4cm",
+    nomePeca: "Ponto Natural Kit Shelfs",
+    tamanho: "25x4",
+    especificacao: "Considerar fita dupla-face para colagem na frente do móvel",
+    cores: "4x0",
+  },
+  {
+    pagina: 86,
+    codigo: "NAT_MAES_INT_AUR_PONTO_NATURAL_LUMINA_TESTEIRA_35x32cm",
+    nomePeca: "Ponto Natural Lumina Testeira",
+    tamanho: "35x32",
+    especificacao: "",
+    cores: "4x4",
+  },
+
+  // ===== INTERNOS — PONTO DE MESA (páginas 89–92) =====
+  {
+    pagina: 89,
+    codigo: "NAT_MAES_INT_AUR_PONTA_MESA_KIT_TESTEIRA:2",
+    nomePeca: "Ponta Mesa Kit Testeira",
+    tamanho: "22,5x18",
+    especificacao: "",
+    cores: "4x4",
+  },
+  {
+    pagina: 90,
+    codigo: "NAT_MAES_INT_AUR_PONTA_MESA_KIT_TESTEIRA",
+    nomePeca: "Ponta Mesa Kit Testeira (Arranjo)",
+    tamanho: "52,4x26,2",
+    especificacao: "",
+    cores: "4x4",
+  },
+  {
+    pagina: 92,
+    codigo: "NAT_MAES_INT_AUR_PONTA_MESA_FACA_BASE_VERDE_54,5x4cm",
+    nomePeca: "Ponta Mesa Faca Base Verde",
+    tamanho: "54,5x4",
+    especificacao: "PANTONE 342 C. Base com espessura de 1cm com rasgo no meio de 0,2cm para suporte do kit testeira",
+    cores: "4x0",
+  },
+
+  // ===== INTERNOS — PANCARTAS MSP (página 95) =====
+  {
+    pagina: 95,
+    codigo: "NAT_MAES_INT_AUR_KIT_BAND_OVAL_MSP_9,7x17,3cm",
+    nomePeca: "Kit Band Oval MSP",
+    tamanho: "9,7x17,3",
+    especificacao: "",
+    cores: "4x0",
+  },
+
+  // ===== INTERNOS — WELCOME TABLE (páginas 97–101) =====
+  {
+    pagina: 97,
+    codigo: "NAT_MAES_INT_AUR_WT_ARRANJO_52,4x26,2cm",
+    nomePeca: "WT Arranjo",
+    tamanho: "52,4x26,2",
+    especificacao: "",
+    cores: "4x4",
+  },
+  {
+    pagina: 98,
+    codigo: "NAT_MAES_INT_AUR_WT_FOTO_25x28cm",
+    nomePeca: "WT Foto",
+    tamanho: "25x28",
+    especificacao: "",
+    cores: "4x4",
+  },
+  {
+    pagina: 99,
+    codigo: "NAT_MAES_INT_AUR_WT_KIT_APLIQUE_CTA",
+    nomePeca: "WT Kit Aplique CTA",
+    tamanho: "19x14",
+    especificacao: "Considerar letra-caixa na PANTONE 9081 C com espessura de 0,5cm com retroiluminação",
+    cores: "4x0",
+  },
+  {
+    pagina: 101,
+    codigo: "NAT_MAES_INT_AUR_WT_FACA_BASE_VERDE_76,5x4cm",
+    nomePeca: "WT Faca Base Verde",
+    tamanho: "76,5x4",
+    especificacao: "PANTONE 342 C. Base com espessura de 1cm com rasgo no meio de 0,2cm para suporte do kit",
+    cores: "4x0",
+  },
+
+  // ===== INTERNOS — MÓVEL CLÁSSICO (páginas 103–105) =====
+  {
+    pagina: 103,
+    codigo: "NAT_MAES_INT_AUR_MVCLASS_TEST_P_59,5x11,5cm",
+    nomePeca: "MV Clássico Testeira P",
+    tamanho: "59,5x11,5",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 104,
+    codigo: "NAT_MAES_INT_AUR_MV_CLASS_TEST_G_90x15cm",
+    nomePeca: "MV Clássico Testeira G",
+    tamanho: "90x15",
+    especificacao: "",
+    cores: "4x0",
+  },
+
+  // ===== INTERNOS — BTG & MP (páginas 108–109) =====
+  {
+    pagina: 108,
+    codigo: "NAT_MAES_INT_NAU_BTG_KIT_BAND_OVAL_11,5x23,4cm",
+    nomePeca: "BTG Kit Band Oval",
+    tamanho: "11,5x23,4",
+    especificacao: "",
+    cores: "4x0",
+  },
+  {
+    pagina: 109,
+    codigo: "NAT_MAES_INT_NAU_MP_KIT_BAND_OVAL_14,5x29,5cm",
+    nomePeca: "MP Kit Band Oval",
+    tamanho: "14,5x29,5",
+    especificacao: "",
+    cores: "4x0",
   },
 ];
