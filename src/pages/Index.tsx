@@ -20,7 +20,7 @@ import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriang
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const MAX_PAGES_PER_PART = 20;
+const MAX_PAGES_PER_PART = 10;
 
 const Index = () => {
   const [pieces, setPieces] = useState<Piece[]>([]);
@@ -103,7 +103,7 @@ const Index = () => {
     setProgress(2);
 
     try {
-      toast.info("Dividindo PDF em partes de até 20 páginas...");
+      toast.info("Dividindo PDF em partes de até 10 páginas...");
       const parts = await splitPdf(file);
       setProgress(10);
 
@@ -232,10 +232,10 @@ const Index = () => {
         <Alert className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
           <AlertTitle className="text-amber-800 dark:text-amber-400 font-bold text-base">
-            Divisão automática em partes de até 20 páginas
+            Divisão automática em partes de até 10 páginas
           </AlertTitle>
           <AlertDescription className="text-amber-700 dark:text-amber-300">
-            Envie um único PDF do book completo. O sistema irá <strong>dividir automaticamente</strong> em partes de até 20 páginas
+            Envie um único PDF do book completo. O sistema irá <strong>dividir automaticamente</strong> em partes de até 10 páginas
             e processar cada parte separadamente, consolidando todas as peças em uma única tabela.
           </AlertDescription>
         </Alert>
