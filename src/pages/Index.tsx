@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import UserMenu from "@/components/UserMenu";
+
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
 import { Button } from "@/components/ui/button";
@@ -225,7 +225,7 @@ const Index = () => {
               Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
             </p>
           </div>
-          <UserMenu />
+          
         </div>
 
         {/* Warning */}
