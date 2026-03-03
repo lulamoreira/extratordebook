@@ -52,19 +52,7 @@ const Index = () => {
       const endPage = Math.min(startPage + MAX_PAGES_PER_PART, totalPages);
       const newDoc = await PDFDocument.create();
       const copiedPages = await newDoc.copyPages(pdfDoc, Array.from({ length: endPage - startPage }, (_, i) => startPage + i));
-      copiedPages.forEach((page) => {
-        newDoc.addPage(page);
-        // Strip images/XObjects from page to reduce size (only text matters)
-        try {
-          const dict = page.node.normalizedEntries();
-          const resources = dict.Resources;
-          if (resources && 'delete' in resources) {
-            (resources as any).delete((resources as any).context.obj('XObject'));
-          }
-        } catch {
-          // Ignore — still send the page with images
-        }
-      });
+      copiedPages.forEach((page) => newDoc.addPage(page));
       const pdfBytes = await newDoc.save({ useObjectStreams: true });
       const base64 = btoa(
         new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), "")
