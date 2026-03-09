@@ -144,6 +144,9 @@ const Index = () => {
       setProgress(100);
 
       if (successCount > 0) {
+        // Save to history only if we have pieces
+        saveToHistory(file.name, allPieces);
+        setHistoryRefreshKey(prev => prev + 1);
         toast.success(`${successCount} peças extraídas de ${parts.length - errorCount} parte(s)!`);
       }
     } catch (err: any) {
