@@ -10,7 +10,7 @@ import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Pencil, Check, X, Trash2, History, FileSpreadsheet } from "lucide-react";
+import { Download, Pencil, Check, X, Trash2, History, FileSpreadsheet, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,12 +24,21 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nicknameInput, setNicknameInput] = useState("");
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setHistory(getHistory());
   }, [refreshKey]);
 
   if (history.length === 0) return null;
+
+  const toggleErrors = (id: string) => {
+    setExpandedErrors((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   const startRename = (entry: HistoryEntry) => {
     setEditingId(entry.id);
@@ -81,53 +90,84 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
       </CardHeader>
       <CardContent className="space-y-2">
         {history.map((entry) => (
-          <div
-            key={entry.id}
-            className="flex items-center gap-2 rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors group"
-          >
-            <FileSpreadsheet className="h-4 w-4 shrink-0 text-primary" />
+          <div key={entry.id} className="space-y-0">
+            <div
+              className="flex items-center gap-2 rounded-md border px-3 py-2 hover:bg-muted/50 transition-colors group"
+            >
+              <FileSpreadsheet className="h-4 w-4 shrink-0 text-primary" />
 
-            {editingId === entry.id ? (
-              <div className="flex flex-1 items-center gap-1">
-                <Input
-                  value={nicknameInput}
-                  onChange={(e) => setNicknameInput(e.target.value)}
-                  className="h-7 text-xs"
-                  autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && saveNickname(entry.id)}
-                />
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => saveNickname(entry.id)}>
-                  <Check className="h-3.5 w-3.5 text-green-600" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
-                  <X className="h-3.5 w-3.5 text-destructive" />
-                </Button>
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={() => onLoad(entry.pieces, entry.nickname || entry.fileName)}
-                  className="flex-1 text-left text-sm font-medium truncate hover:underline cursor-pointer"
-                >
-                  {entry.nickname || entry.fileName.replace(/\.pdf$/i, "")}
-                </button>
-                <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
-                  {entry.pieces.length} peças · {format(new Date(entry.createdAt), "dd/MM HH:mm", { locale: ptBR })}
-                </span>
-              </>
-            )}
+              {editingId === entry.id ? (
+                <div className="flex flex-1 items-center gap-1">
+                  <Input
+                    value={nicknameInput}
+                    onChange={(e) => setNicknameInput(e.target.value)}
+                    className="h-7 text-xs"
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && saveNickname(entry.id)}
+                  />
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => saveNickname(entry.id)}>
+                    <Check className="h-3.5 w-3.5 text-green-600" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                    <X className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onLoad(entry.pieces, entry.nickname || entry.fileName)}
+                    className="flex-1 text-left text-sm font-medium truncate hover:underline cursor-pointer"
+                  >
+                    {entry.nickname || entry.fileName.replace(/\.pdf$/i, "")}
+                  </button>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap hidden sm:inline">
+                    {entry.pieces.length} peças
+                    {entry.errors && entry.errors.length > 0 && (
+                      <span className="text-destructive ml-1">· {entry.errors.length} falha(s)</span>
+                    )}
+                    {" · "}
+                    {format(new Date(entry.createdAt), "dd/MM HH:mm", { locale: ptBR })}
+                  </span>
+                </>
+              )}
 
-            {editingId !== entry.id && (
-              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => downloadEntry(entry)} title="Baixar Excel">
-                  <Download className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(entry.id)} title="Remover">
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+              {editingId !== entry.id && (
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {entry.errors && entry.errors.length > 0 && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleErrors(entry.id)} title="Ver relatório de erros">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => downloadEntry(entry)} title="Baixar Excel">
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(entry.id)} title="Remover">
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Error Report */}
+            {entry.errors && entry.errors.length > 0 && expandedErrors.has(entry.id) && (
+              <div className="ml-6 mt-1 mb-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs space-y-2">
+                <div className="flex items-center gap-1.5 font-semibold text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Relatório de falhas ({entry.errors.length} parte{entry.errors.length > 1 ? "s" : ""})
+                </div>
+                {entry.errors.map((err, idx) => (
+                  <div key={idx} className="border-t border-destructive/20 pt-1.5">
+                    <div className="font-medium text-foreground">{err.partName}</div>
+                    <div className="text-muted-foreground">Páginas: {err.pages}</div>
+                    <div className="text-muted-foreground">Erro: {err.errorMessage}</div>
+                    <div className="mt-1 text-foreground/80 italic">
+                      💡 {getDiagnosis(err.errorMessage)}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -136,5 +176,18 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     </Card>
   );
 };
+
+function getDiagnosis(errorMsg: string): string {
+  const msg = errorMsg.toLowerCase();
+  if (msg.includes("429") || msg.includes("limite") || msg.includes("rate"))
+    return "Limite de requisições excedido. Aguarde alguns minutos e tente novamente.";
+  if (msg.includes("402") || msg.includes("crédito"))
+    return "Créditos insuficientes. Adicione créditos ao workspace.";
+  if (msg.includes("timeout") || msg.includes("tempo"))
+    return "Processamento demorou demais. Tente um PDF com menos páginas ou imagens mais leves.";
+  if (msg.includes("nenhuma peça"))
+    return "A IA não encontrou peças nesta parte. Verifique se as páginas contêm peças gráficas visíveis.";
+  return "Erro inesperado. Tente reenviar o PDF ou divida-o manualmente em partes menores.";
+}
 
 export default ExtractionHistory;
