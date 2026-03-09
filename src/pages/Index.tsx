@@ -111,7 +111,7 @@ const Index = () => {
       const fileStatuses = parts.map((p) => ({ name: p.name, status: "pending" as const }));
       setProcessingFiles(fileStatuses);
 
-      let allPieces: Piece[] = [...pieces];
+      let allPieces: Piece[] = [];
       let successCount = 0;
       let errorCount = 0;
 
@@ -145,7 +145,12 @@ const Index = () => {
         // Save to history only if we have pieces
         saveToHistory(file.name, allPieces);
         setHistoryRefreshKey(prev => prev + 1);
-        toast.success(`${successCount} peças extraídas de ${parts.length - errorCount} parte(s)!`);
+
+        // After extraction, keep only history visible and prepare for a new file
+        setPieces([]);
+        setFileName("");
+
+        toast.success(`${successCount} peças extraídas e salvas no histórico!`);
       }
     } catch (err: any) {
       toast.error(`Erro ao dividir PDF: ${err.message}`);
