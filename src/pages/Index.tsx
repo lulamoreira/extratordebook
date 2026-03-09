@@ -286,29 +286,47 @@ const Index = () => {
 
         {/* Upload Area */}
         {pieces.length === 0 && !isExtracting && (
-          <Card className="mb-8 border-dashed border-2">
+          <Card 
+            className={`mb-8 border-dashed border-2 transition-colors ${
+              isDragging 
+                ? "border-primary bg-primary/5" 
+                : "border-muted-foreground/25"
+            }`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
             <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
               <div className="rounded-full bg-muted p-4">
                 <Upload className="h-8 w-8 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <p className="text-lg font-medium text-foreground">Envie o PDF do Book</p>
-                <p className="text-sm text-muted-foreground">Selecione um PDF (máx. 50MB) — será dividido automaticamente</p>
+                <p className="text-lg font-medium text-foreground">
+                  {isDragging ? "Solte o PDF aqui" : "Envie o PDF do Book"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isDragging 
+                    ? "Solte para iniciar o processamento" 
+                    : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
+                  }
+                </p>
               </div>
-              <label>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button asChild className="gap-2 cursor-pointer">
-                  <span>
-                    <FileText className="h-4 w-4" />
-                    Selecionar PDF
-                  </span>
-                </Button>
-              </label>
+              {!isDragging && (
+                <label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button asChild className="gap-2 cursor-pointer">
+                    <span>
+                      <FileText className="h-4 w-4" />
+                      Selecionar PDF
+                    </span>
+                  </Button>
+                </label>
+              )}
             </CardContent>
           </Card>
         )}
