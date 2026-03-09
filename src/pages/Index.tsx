@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
+import { saveToHistory } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
@@ -19,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ExtractionHistory from "@/components/ExtractionHistory";
 
 const MAX_PAGES_PER_PART = 10;
 
@@ -30,6 +32,7 @@ const Index = () => {
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<Piece | null>(null);
   const [processingFiles, setProcessingFiles] = useState<{ name: string; status: "pending" | "processing" | "done" | "error" }[]>([]);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const splitPdf = async (file: File): Promise<{ name: string; base64: string }[]> => {
     const buffer = await file.arrayBuffer();
@@ -141,6 +144,9 @@ const Index = () => {
       setProgress(100);
 
       if (successCount > 0) {
+        // Save to history only if we have pieces
+        saveToHistory(file.name, allPieces);
+        setHistoryRefreshKey(prev => prev + 1);
         toast.success(`${successCount} peças extraídas de ${parts.length - errorCount} parte(s)!`);
       }
     } catch (err: any) {
@@ -204,6 +210,12 @@ const Index = () => {
     toast.info("Peça removida");
   };
 
+  const handleLoadFromHistory = (pieces: Piece[], fileName: string) => {
+    setPieces(pieces);
+    setFileName(fileName);
+    toast.success(`Carregado: ${fileName} (${pieces.length} peças)`);
+  };
+
   const addRow = () => {
     setPieces((prev) => [
       ...prev,
@@ -239,6 +251,9 @@ const Index = () => {
             e processar cada parte separadamente, consolidando todas as peças em uma única tabela.
           </AlertDescription>
         </Alert>
+
+        {/* History */}
+        <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Upload Area */}
         {pieces.length === 0 && !isExtracting && (
