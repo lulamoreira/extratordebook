@@ -88,10 +88,7 @@ const Index = () => {
     throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
   };
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = useCallback(async (file: File) => {
     if (file.type !== "application/pdf") {
       toast.error("Apenas arquivos PDF são aceitos.");
       return;
@@ -155,9 +152,40 @@ const Index = () => {
     } finally {
       setIsExtracting(false);
       setTimeout(() => setProcessingFiles([]), 3000);
-      e.target.value = "";
     }
   }, [pieces]);
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    await processFile(file);
+    e.target.value = "";
+  }, [processFile]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  }, [processFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isDragging) {
+      setIsDragging(true);
+    }
+  }, [isDragging]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    // Only set dragging to false if we're leaving the main container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }, []);
 
   const handleDownload = () => {
     if (pieces.length === 0) return;
