@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import { saveToHistory } from "@/lib/historyStorage";
+import { saveToHistory, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
@@ -23,6 +23,25 @@ import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
 
 const MAX_PAGES_PER_PART = 10;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 3000;
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const getErrorDiagnosis = (errorMsg: string): string => {
+  const msg = errorMsg.toLowerCase();
+  if (msg.includes("429") || msg.includes("limite") || msg.includes("rate"))
+    return "Limite de requisições excedido. Aguarde alguns minutos e tente novamente.";
+  if (msg.includes("402") || msg.includes("crédito"))
+    return "Créditos insuficientes no workspace. Adicione créditos e tente novamente.";
+  if (msg.includes("timeout") || msg.includes("tempo"))
+    return "Tempo de processamento excedido. Tente um PDF com menos páginas ou imagens mais leves.";
+  if (msg.includes("500") || msg.includes("interno"))
+    return "Erro interno do servidor. Tente novamente em alguns minutos.";
+  if (msg.includes("nenhuma peça"))
+    return "A IA não encontrou peças nesta parte. Verifique se as páginas contêm peças gráficas visíveis.";
+  return "Erro inesperado. Tente novamente ou divida o PDF manualmente em partes menores.";
+};
 
 const Index = () => {
   const [pieces, setPieces] = useState<Piece[]>([]);
@@ -113,13 +132,14 @@ const Index = () => {
 
       let allPieces: Piece[] = [];
       let successCount = 0;
-      let errorCount = 0;
+      const failedParts: { index: number; error: string }[] = [];
 
+      // First pass
       for (let i = 0; i < parts.length; i++) {
         setProcessingFiles((prev) =>
           prev.map((f, idx) => (idx === i ? { ...f, status: "processing" } : f))
         );
-        setProgress(Math.round(10 + ((i) / parts.length) * 85));
+        setProgress(Math.round(10 + ((i) / parts.length) * 70));
 
         try {
           const extracted = await processOnePart(parts[i].base64, parts[i].name);
@@ -130,27 +150,80 @@ const Index = () => {
           );
         } catch (err: any) {
           console.error(`Error processing ${parts[i].name}:`, err);
-          errorCount++;
+          failedParts.push({ index: i, error: err.message || "Erro desconhecido" });
           setProcessingFiles((prev) =>
             prev.map((f, idx) => (idx === i ? { ...f, status: "error" } : f))
           );
-          toast.error(`Erro em "${parts[i].name}": ${err.message}`);
+        }
+      }
+
+      // Retry failed parts
+      if (failedParts.length > 0) {
+        toast.info(`Retentando ${failedParts.length} parte(s) com falha...`);
+        const stillFailed: { index: number; error: string }[] = [];
+
+        for (let retry = 0; retry < MAX_RETRIES; retry++) {
+          const toRetry = retry === 0 ? [...failedParts] : [...stillFailed];
+          stillFailed.length = 0;
+
+          if (toRetry.length === 0) break;
+
+          await delay(RETRY_DELAY_MS * (retry + 1));
+
+          for (const { index } of toRetry) {
+            setProcessingFiles((prev) =>
+              prev.map((f, idx) => (idx === index ? { ...f, status: "processing" } : f))
+            );
+            setProgress(Math.round(80 + ((retry + 1) / MAX_RETRIES) * 15));
+
+            try {
+              const extracted = await processOnePart(parts[index].base64, parts[index].name);
+              allPieces = [...allPieces, ...extracted];
+              successCount += extracted.length;
+              setProcessingFiles((prev) =>
+                prev.map((f, idx) => (idx === index ? { ...f, status: "done" } : f))
+              );
+              toast.success(`"${parts[index].name}" recuperada na tentativa ${retry + 2}!`);
+            } catch (err: any) {
+              stillFailed.push({ index, error: err.message || "Erro desconhecido" });
+              setProcessingFiles((prev) =>
+                prev.map((f, idx) => (idx === index ? { ...f, status: "error" } : f))
+              );
+            }
+          }
+        }
+
+        // Build error report for parts that ultimately failed
+        var partErrors: PartError[] = stillFailed.map(({ index, error }) => {
+          const partIdx = index;
+          const startPage = partIdx * MAX_PAGES_PER_PART + 1;
+          const endPage = Math.min(startPage + MAX_PAGES_PER_PART - 1, parts.length * MAX_PAGES_PER_PART);
+          return {
+            partName: parts[index].name,
+            errorMessage: error,
+            pages: `${startPage}–${endPage}`,
+          };
+        });
+
+        if (partErrors.length > 0) {
+          toast.error(`${partErrors.length} parte(s) falharam mesmo após ${MAX_RETRIES} retentativas.`);
         }
       }
 
       setPieces(allPieces);
       setProgress(100);
 
-      if (successCount > 0) {
-        // Save to history only if we have pieces
-        saveToHistory(file.name, allPieces);
-        setHistoryRefreshKey(prev => prev + 1);
+      const errors = typeof partErrors !== "undefined" ? partErrors : [];
 
-        // After extraction, keep only history visible and prepare for a new file
+      if (successCount > 0 || errors.length > 0) {
+        saveToHistory(file.name, allPieces, errors);
+        setHistoryRefreshKey(prev => prev + 1);
         setPieces([]);
         setFileName("");
 
-        toast.success(`${successCount} peças extraídas e salvas no histórico!`);
+        if (successCount > 0) {
+          toast.success(`${successCount} peças extraídas e salvas no histórico!`);
+        }
       }
     } catch (err: any) {
       toast.error(`Erro ao dividir PDF: ${err.message}`);

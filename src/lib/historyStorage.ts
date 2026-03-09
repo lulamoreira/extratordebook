@@ -1,11 +1,18 @@
 import { type Piece } from "@/data/extractedPieces";
 
+export interface PartError {
+  partName: string;
+  errorMessage: string;
+  pages: string;
+}
+
 export interface HistoryEntry {
   id: string;
   fileName: string;
   nickname: string;
   pieces: Piece[];
   createdAt: string;
+  errors?: PartError[];
 }
 
 const STORAGE_KEY = "extraction_history";
@@ -20,7 +27,7 @@ export function getHistory(): HistoryEntry[] {
   }
 }
 
-export function saveToHistory(fileName: string, pieces: Piece[]): HistoryEntry {
+export function saveToHistory(fileName: string, pieces: Piece[], errors?: PartError[]): HistoryEntry {
   const history = getHistory();
   const entry: HistoryEntry = {
     id: crypto.randomUUID(),
@@ -28,6 +35,7 @@ export function saveToHistory(fileName: string, pieces: Piece[]): HistoryEntry {
     nickname: "",
     pieces,
     createdAt: new Date().toISOString(),
+    errors: errors && errors.length > 0 ? errors : undefined,
   };
   const updated = [entry, ...history].slice(0, MAX_ENTRIES);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
