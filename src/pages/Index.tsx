@@ -33,6 +33,7 @@ const Index = () => {
   const [editData, setEditData] = useState<Piece | null>(null);
   const [processingFiles, setProcessingFiles] = useState<{ name: string; status: "pending" | "processing" | "done" | "error" }[]>([]);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const splitPdf = async (file: File): Promise<{ name: string; base64: string }[]> => {
     const buffer = await file.arrayBuffer();
