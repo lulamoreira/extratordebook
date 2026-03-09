@@ -252,6 +252,9 @@ const Index = () => {
           </AlertDescription>
         </Alert>
 
+        {/* History */}
+        <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
+
         {/* Upload Area */}
         {pieces.length === 0 && !isExtracting && (
           <Card className="mb-8 border-dashed border-2">
