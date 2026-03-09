@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Pencil, Check, X, Trash2, History, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 
 interface Props {
   onLoad: (pieces: Piece[], fileName: string) => void;
