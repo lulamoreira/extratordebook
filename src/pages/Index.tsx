@@ -23,6 +23,25 @@ import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
 
 const MAX_PAGES_PER_PART = 10;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 3000;
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const getErrorDiagnosis = (errorMsg: string): string => {
+  const msg = errorMsg.toLowerCase();
+  if (msg.includes("429") || msg.includes("limite") || msg.includes("rate"))
+    return "Limite de requisições excedido. Aguarde alguns minutos e tente novamente.";
+  if (msg.includes("402") || msg.includes("crédito"))
+    return "Créditos insuficientes no workspace. Adicione créditos e tente novamente.";
+  if (msg.includes("timeout") || msg.includes("tempo"))
+    return "Tempo de processamento excedido. Tente um PDF com menos páginas ou imagens mais leves.";
+  if (msg.includes("500") || msg.includes("interno"))
+    return "Erro interno do servidor. Tente novamente em alguns minutos.";
+  if (msg.includes("nenhuma peça"))
+    return "A IA não encontrou peças nesta parte. Verifique se as páginas contêm peças gráficas visíveis.";
+  return "Erro inesperado. Tente novamente ou divida o PDF manualmente em partes menores.";
+};
 
 const Index = () => {
   const [pieces, setPieces] = useState<Piece[]>([]);
