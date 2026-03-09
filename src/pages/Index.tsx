@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import { saveToHistory } from "@/lib/historyStorage";
+import { saveToHistory, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
