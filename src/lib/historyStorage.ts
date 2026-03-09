@@ -1,11 +1,18 @@
 import { type Piece } from "@/data/extractedPieces";
 
+export interface PartError {
+  partName: string;
+  errorMessage: string;
+  pages: string;
+}
+
 export interface HistoryEntry {
   id: string;
   fileName: string;
   nickname: string;
   pieces: Piece[];
   createdAt: string;
+  errors?: PartError[];
 }
 
 const STORAGE_KEY = "extraction_history";
