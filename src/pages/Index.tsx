@@ -210,6 +210,12 @@ const Index = () => {
     toast.info("Peça removida");
   };
 
+  const handleLoadFromHistory = (pieces: Piece[], fileName: string) => {
+    setPieces(pieces);
+    setFileName(fileName);
+    toast.success(`Carregado: ${fileName} (${pieces.length} peças)`);
+  };
+
   const addRow = () => {
     setPieces((prev) => [
       ...prev,
