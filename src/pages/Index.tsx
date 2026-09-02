@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import { saveToHistory, updateEntryPieces, type PartError } from "@/lib/historyStorage";
+import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
@@ -283,19 +283,19 @@ const Index = () => {
       setProgress(100);
 
       if (successCount > 0 || partErrors.length > 0) {
-        const entry = saveToHistory(file.name, finalPieces, partErrors);
-        setHistoryRefreshKey((prev) => prev + 1);
-
-        if (entry.notPersisted) {
+        try {
+          const entry = await saveToHistory(file.name, finalPieces, partErrors);
+          setCurrentEntryId(entry.id);
+          setHistoryRefreshKey((prev) => prev + 1);
+          if (successCount > 0) {
+            toast.success(`${finalPieces.length} peças extraídas e salvas na nuvem!`);
+          }
+        } catch (saveErr) {
+          console.error("Erro ao salvar histórico:", saveErr);
           setCurrentEntryId(null);
           toast.error("Não foi possível salvar no histórico — baixe o Excel agora para não perder", {
             duration: 15000,
           });
-        } else {
-          setCurrentEntryId(entry.id);
-          if (successCount > 0) {
-            toast.success(`${finalPieces.length} peças extraídas e salvas no histórico!`);
-          }
         }
       }
     } catch (err: any) {
@@ -397,18 +397,29 @@ const Index = () => {
     toast.success(`Carregado: ${loadedName} (${loaded.length} peças)`);
   };
 
-  const handleSaveToHistory = () => {
+  const handleSaveToHistory = async () => {
     if (!currentEntryId) {
       toast.error("Nenhuma entrada do histórico carregada para atualizar.");
       return;
     }
-    const ok = updateEntryPieces(currentEntryId, pieces);
-    if (ok) {
+    try {
+      await updateHistoryPieces(currentEntryId, pieces);
       setHistoryRefreshKey((prev) => prev + 1);
       toast.success("Alterações salvas no histórico!");
-    } else {
+    } catch (err) {
+      console.error(err);
       toast.error("Não foi possível salvar no histórico — baixe o Excel para não perder as edições.");
     }
+  };
+
+  const handleGoHome = () => {
+    setPieces([]);
+    setFileName("");
+    setEditingRow(null);
+    setEditData(null);
+    setCurrentEntryId(null);
+    setHistoryRefreshKey((prev) => prev + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
 
