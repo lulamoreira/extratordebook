@@ -10,14 +10,6 @@ export interface NaturaRow {
   formato: string;
 }
 
-const GROUP_ORDER = [
-  "TODAS AS LOJAS",
-  "VITRINE PRIMÁRIA",
-  "VITRINE SECUNDÁRIA",
-  "INTERNOS",
-  "OUTROS",
-] as const;
-
 const GROUP_COLORS: Record<string, string> = {
   "TODAS AS LOJAS": "FFC00000",
   "VITRINE PRIMÁRIA": "FF0070C0",
@@ -41,10 +33,12 @@ const centerWrap: Partial<ExcelJS.Alignment> = {
   wrapText: true,
 };
 
-const groupIndex = (grupo: string): number => {
-  const idx = GROUP_ORDER.indexOf(grupo as (typeof GROUP_ORDER)[number]);
-  return idx === -1 ? GROUP_ORDER.length : idx;
+/** Numeric page of a row; 0 (or NaN) means "unknown" and is pushed to the end. */
+const pageValue = (row: NaturaRow): number => {
+  const n = Number(row.pagBook);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 };
+
 
 /**
  * Builds and downloads the official Natura production spreadsheet layout.
