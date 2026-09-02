@@ -563,6 +563,20 @@ const Index = () => {
                   <Download className="h-4 w-4" />
                   Baixar Excel
                 </Button>
+                <Button
+                  onClick={handleGerarNatura}
+                  disabled={isGeneratingNatura}
+                  className="gap-2"
+                  size="sm"
+                  variant="secondary"
+                >
+                  {isGeneratingNatura ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileSpreadsheet className="h-4 w-4" />
+                  )}
+                  Gerar Planilha Padrão Natura
+                </Button>
               </div>
             </div>
 
