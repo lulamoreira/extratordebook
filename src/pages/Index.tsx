@@ -17,10 +17,11 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle, Save } from "lucide-react";
+import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle, Save, FileSpreadsheet, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
+import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 
 const MAX_PAGES_PER_PART = 10;
 const MAX_RETRIES = 2;
@@ -95,6 +96,16 @@ const Index = () => {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
+  const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
+
+  const handleGerarNatura = async () => {
+    setIsGeneratingNatura(true);
+    try {
+      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""));
+    } finally {
+      setIsGeneratingNatura(false);
+    }
+  };
 
   const splitPdf = async (file: File): Promise<SplitResult> => {
     const buffer = await file.arrayBuffer();
@@ -562,6 +573,20 @@ const Index = () => {
                 <Button onClick={handleDownload} className="gap-2" size="sm">
                   <Download className="h-4 w-4" />
                   Baixar Excel
+                </Button>
+                <Button
+                  onClick={handleGerarNatura}
+                  disabled={isGeneratingNatura}
+                  className="gap-2"
+                  size="sm"
+                  variant="secondary"
+                >
+                  {isGeneratingNatura ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileSpreadsheet className="h-4 w-4" />
+                  )}
+                  Gerar Planilha Padrão Natura
                 </Button>
               </div>
             </div>

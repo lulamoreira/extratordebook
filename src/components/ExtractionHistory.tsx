@@ -10,8 +10,9 @@ import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Pencil, Check, X, Trash2, History, FileSpreadsheet, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, Pencil, Check, X, Trash2, History, FileSpreadsheet, AlertTriangle, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -25,6 +26,17 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nicknameInput, setNicknameInput] = useState("");
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  const generateNatura = async (entry: HistoryEntry) => {
+    setGeneratingId(entry.id);
+    try {
+      const base = entry.nickname || entry.fileName.replace(/\.pdf$/i, "");
+      await exportarPlanilhaNatura(entry.pieces, base);
+    } finally {
+      setGeneratingId(null);
+    }
+  };
 
   useEffect(() => {
     setHistory(getHistory());
@@ -140,6 +152,20 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                   )}
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => downloadEntry(entry)} title="Baixar Excel">
                     <Download className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => generateNatura(entry)}
+                    disabled={generatingId === entry.id}
+                    title="Gerar Planilha Padrão Natura"
+                  >
+                    {generatingId === entry.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    )}
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
                     <Pencil className="h-3.5 w-3.5" />
