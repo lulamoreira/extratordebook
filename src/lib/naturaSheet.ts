@@ -105,12 +105,19 @@ export async function gerarPlanilhaNatura(
     headerStyle(cell, 12);
   });
 
-  // Ordena por grupo (ordem fixa), preservando a ordem por página dentro do grupo
-  const sorted = [...rows].sort((a, b) => {
-    const g = groupIndex(a.grupo) - groupIndex(b.grupo);
-    if (g !== 0) return g;
-    return (Number(a.pagBook) || 0) - (Number(b.pagBook) || 0);
-  });
+  // A página do book manda: ordena por página (numérica) de forma ESTÁVEL.
+  // Páginas ausentes/inválidas (0) vão para o fim. O grupo não influencia a posição.
+  const sorted = rows
+    .map((row, originalIndex) => ({ row, originalIndex, page: pageValue(row) }))
+    .sort((a, b) => {
+      const aUnknown = a.page === 0;
+      const bUnknown = b.page === 0;
+      if (aUnknown !== bUnknown) return aUnknown ? 1 : -1;
+      if (!aUnknown && a.page !== b.page) return a.page - b.page;
+      return a.originalIndex - b.originalIndex;
+    })
+    .map((e) => e.row);
+
 
   const FIRST_DATA_ROW = 7;
   const blackBorder = thinBorder("FF000000");
