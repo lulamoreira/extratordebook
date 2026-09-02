@@ -379,11 +379,27 @@ const Index = () => {
     toast.info("Peça removida");
   };
 
-  const handleLoadFromHistory = (pieces: Piece[], fileName: string) => {
-    setPieces(pieces);
-    setFileName(fileName);
-    toast.success(`Carregado: ${fileName} (${pieces.length} peças)`);
+  const handleLoadFromHistory = (loaded: Piece[], loadedName: string, entryId: string) => {
+    setPieces(normalizePieces(loaded));
+    setFileName(loadedName);
+    setCurrentEntryId(entryId);
+    toast.success(`Carregado: ${loadedName} (${loaded.length} peças)`);
   };
+
+  const handleSaveToHistory = () => {
+    if (!currentEntryId) {
+      toast.error("Nenhuma entrada do histórico carregada para atualizar.");
+      return;
+    }
+    const ok = updateEntryPieces(currentEntryId, pieces);
+    if (ok) {
+      setHistoryRefreshKey((prev) => prev + 1);
+      toast.success("Alterações salvas no histórico!");
+    } else {
+      toast.error("Não foi possível salvar no histórico — baixe o Excel para não perder as edições.");
+    }
+  };
+
 
   const addRow = () => {
     setPieces((prev) => [
