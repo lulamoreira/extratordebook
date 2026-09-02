@@ -525,7 +525,7 @@ const Index = () => {
                       <div key={i} className="flex items-center gap-2 text-xs">
                         {f.status === "pending" && <span className="text-muted-foreground">⏳</span>}
                         {f.status === "processing" && <span className="animate-spin">⚙️</span>}
-                        {f.status === "done" && <span className="text-green-600">✅</span>}
+                        {f.status === "done" && <span className="text-success">✅</span>}
                         {f.status === "error" && <span className="text-destructive">❌</span>}
                         <span className={f.status === "processing" ? "font-medium text-foreground" : "text-muted-foreground"}>
                           {f.name}
@@ -677,7 +677,7 @@ const Index = () => {
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveEdit}>
-                                <Check className="h-3.5 w-3.5 text-green-600" />
+                                <Check className="h-3.5 w-3.5 text-success" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}>
                                 <X className="h-3.5 w-3.5 text-destructive" />
