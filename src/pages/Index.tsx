@@ -21,6 +21,7 @@ import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriang
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
+import AppHeader from "@/components/AppHeader";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 
 const MAX_PAGES_PER_PART = 10;
@@ -432,32 +433,32 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Extrator de Peças — Books de Campanha
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
-            </p>
-          </div>
-          
+    <div className="min-h-screen bg-background">
+      <AppHeader onGoHome={handleGoHome} busy={isExtracting} />
+
+      <div className="mx-auto max-w-7xl p-4 md:p-8">
+        {/* Page intro */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-extrabold text-foreground">
+            Extrator de Peças — Books de Campanha
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
+          </p>
         </div>
 
         {/* Warning */}
-        <Alert className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
-          <AlertTriangle className="h-5 w-5 text-amber-600" />
-          <AlertTitle className="text-amber-800 dark:text-amber-400 font-bold text-base">
+        <Alert className="mb-6 border-none bg-warning/10 shadow-soft">
+          <AlertTriangle className="h-5 w-5 text-warning" />
+          <AlertTitle className="text-base font-bold text-foreground">
             Divisão automática em partes de até 10 páginas
           </AlertTitle>
-          <AlertDescription className="text-amber-700 dark:text-amber-300">
+          <AlertDescription className="text-muted-foreground">
             Envie um único PDF do book completo. O sistema irá <strong>dividir automaticamente</strong> em partes de até 10 páginas
             e processar cada parte separadamente, consolidando todas as peças em uma única tabela.
           </AlertDescription>
         </Alert>
+
 
         {/* History */}
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
