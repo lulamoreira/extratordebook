@@ -15,7 +15,14 @@ Para cada peça:
    - "VITRINE PRIMÁRIA": vitrines principais, fachadas primárias, painéis de vitrine high/standard.
    - "VITRINE SECUNDÁRIA": vitrines secundárias, fachadas secundárias.
    - "INTERNOS": materiais internos da loja (frames, gôndola/nicho, parede de destaques, ponta de mesa, pancartas internas, shelf).
-   - "OUTROS": só quando realmente não der para enquadrar.
+   - "OUTROS": ÚLTIMO RECURSO ABSOLUTO. Praticamente nunca deve ser usado.
+
+   REGRA DE CLASSIFICAÇÃO (obrigatória): toda peça DEVE ser classificada pelo contexto — a seção de origem,
+   o tipo de peça e, principalmente, a VIZINHANÇA DE PÁGINAS. Peças em páginas próximas quase sempre
+   pertencem ao mesmo grupo do book. Uma elevação, um aplique, uma pancarta, uma testeira ou qualquer peça
+   "solta" HERDA o grupo das peças vizinhas por número de página — nunca vira "OUTROS".
+   Só use "OUTROS" se não houver absolutamente nenhuma pista de contexto nem peça vizinha classificável.
+
 
 2. nome — a família/agrupamento da peça, em MAIÚSCULAS (ex: "PANCARTA", "KIT DISPLAY", "ELEVAÇÃO", "FRAME - TODO DIA VERÃO", "GÔNDOLA (NICHO)", "PONTA DE MESA FACES", "VITRINES ATH - Taboão - High"). Peças irmãs devem receber exatamente o mesmo nome, para poderem ser agrupadas.
 

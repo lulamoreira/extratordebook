@@ -41,10 +41,49 @@ async function formatBatch(batch: Piece[]): Promise<NaturaRow[] | null> {
   return null;
 }
 
+const VALID_GROUPS = new Set([
+  "TODAS AS LOJAS",
+  "VITRINE PRIMÁRIA",
+  "VITRINE SECUNDÁRIA",
+  "INTERNOS",
+]);
+
+/**
+ * Substitui o grupo "OUTROS" pelo grupo da peça mais próxima por número de página
+ * que tenha grupo válido, dando preferência à página anterior em caso de empate.
+ */
+function herdarGrupos(rows: NaturaRow[]): NaturaRow[] {
+  const refs = rows
+    .map((r, i) => ({ i, page: Number(r.pagBook) || 0, grupo: (r.grupo || "").trim() }))
+    .filter((r) => VALID_GROUPS.has(r.grupo));
+
+  if (refs.length === 0) return rows;
+
+  return rows.map((row) => {
+    const grupo = (row.grupo || "").trim();
+    if (VALID_GROUPS.has(grupo)) return row;
+
+    const page = Number(row.pagBook) || 0;
+    let best = refs[0];
+    let bestScore = Infinity;
+    for (const ref of refs) {
+      const dist = Math.abs(ref.page - page);
+      // Empate de distância: prefere a peça da página anterior (ref.page <= page).
+      const score = dist * 2 + (ref.page <= page ? 0 : 1);
+      if (score < bestScore) {
+        bestScore = score;
+        best = ref;
+      }
+    }
+    return { ...row, grupo: best.grupo };
+  });
+}
+
 /**
  * Standardizes the pieces via AI (in batches) and downloads the official
  * Natura layout spreadsheet. Never aborts on partial failures.
  */
+
 export async function exportarPlanilhaNatura(pieces: Piece[], baseName: string): Promise<void> {
   if (!pieces || pieces.length === 0) {
     toast.error("Nenhuma peça para exportar");
@@ -80,7 +119,8 @@ export async function exportarPlanilhaNatura(pieces: Piece[], baseName: string):
   });
 
   const titulo = (baseName || "EXTRAÇÃO").toUpperCase();
-  await gerarPlanilhaNatura(rows, titulo, titulo);
+  await gerarPlanilhaNatura(herdarGrupos(rows), titulo, titulo);
+
 
   if (failedPieces > 0) {
     toast.warning(
