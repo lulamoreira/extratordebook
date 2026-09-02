@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import { saveToHistory, updateEntryPieces, type PartError } from "@/lib/historyStorage";
+import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
@@ -21,6 +21,7 @@ import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriang
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
+import AppHeader from "@/components/AppHeader";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 
 const MAX_PAGES_PER_PART = 10;
@@ -283,19 +284,19 @@ const Index = () => {
       setProgress(100);
 
       if (successCount > 0 || partErrors.length > 0) {
-        const entry = saveToHistory(file.name, finalPieces, partErrors);
-        setHistoryRefreshKey((prev) => prev + 1);
-
-        if (entry.notPersisted) {
+        try {
+          const entry = await saveToHistory(file.name, finalPieces, partErrors);
+          setCurrentEntryId(entry.id);
+          setHistoryRefreshKey((prev) => prev + 1);
+          if (successCount > 0) {
+            toast.success(`${finalPieces.length} peças extraídas e salvas na nuvem!`);
+          }
+        } catch (saveErr) {
+          console.error("Erro ao salvar histórico:", saveErr);
           setCurrentEntryId(null);
           toast.error("Não foi possível salvar no histórico — baixe o Excel agora para não perder", {
             duration: 15000,
           });
-        } else {
-          setCurrentEntryId(entry.id);
-          if (successCount > 0) {
-            toast.success(`${finalPieces.length} peças extraídas e salvas no histórico!`);
-          }
         }
       }
     } catch (err: any) {
@@ -397,18 +398,29 @@ const Index = () => {
     toast.success(`Carregado: ${loadedName} (${loaded.length} peças)`);
   };
 
-  const handleSaveToHistory = () => {
+  const handleSaveToHistory = async () => {
     if (!currentEntryId) {
       toast.error("Nenhuma entrada do histórico carregada para atualizar.");
       return;
     }
-    const ok = updateEntryPieces(currentEntryId, pieces);
-    if (ok) {
+    try {
+      await updateHistoryPieces(currentEntryId, pieces);
       setHistoryRefreshKey((prev) => prev + 1);
       toast.success("Alterações salvas no histórico!");
-    } else {
+    } catch (err) {
+      console.error(err);
       toast.error("Não foi possível salvar no histórico — baixe o Excel para não perder as edições.");
     }
+  };
+
+  const handleGoHome = () => {
+    setPieces([]);
+    setFileName("");
+    setEditingRow(null);
+    setEditData(null);
+    setCurrentEntryId(null);
+    setHistoryRefreshKey((prev) => prev + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
 
@@ -421,32 +433,32 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Extrator de Peças — Books de Campanha
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
-            </p>
-          </div>
-          
+    <div className="min-h-screen bg-background">
+      <AppHeader onGoHome={handleGoHome} busy={isExtracting} />
+
+      <div className="mx-auto max-w-7xl p-4 md:p-8">
+        {/* Page intro */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-extrabold text-foreground">
+            Extrator de Peças — Books de Campanha
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
+          </p>
         </div>
 
         {/* Warning */}
-        <Alert className="mb-6 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
-          <AlertTriangle className="h-5 w-5 text-amber-600" />
-          <AlertTitle className="text-amber-800 dark:text-amber-400 font-bold text-base">
+        <Alert className="mb-6 border-none bg-warning/10 shadow-soft">
+          <AlertTriangle className="h-5 w-5 text-warning" />
+          <AlertTitle className="text-base font-bold text-foreground">
             Divisão automática em partes de até 10 páginas
           </AlertTitle>
-          <AlertDescription className="text-amber-700 dark:text-amber-300">
+          <AlertDescription className="text-muted-foreground">
             Envie um único PDF do book completo. O sistema irá <strong>dividir automaticamente</strong> em partes de até 10 páginas
             e processar cada parte separadamente, consolidando todas as peças em uma única tabela.
           </AlertDescription>
         </Alert>
+
 
         {/* History */}
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
@@ -513,7 +525,7 @@ const Index = () => {
                       <div key={i} className="flex items-center gap-2 text-xs">
                         {f.status === "pending" && <span className="text-muted-foreground">⏳</span>}
                         {f.status === "processing" && <span className="animate-spin">⚙️</span>}
-                        {f.status === "done" && <span className="text-green-600">✅</span>}
+                        {f.status === "done" && <span className="text-success">✅</span>}
                         {f.status === "error" && <span className="text-destructive">❌</span>}
                         <span className={f.status === "processing" ? "font-medium text-foreground" : "text-muted-foreground"}>
                           {f.name}
@@ -665,7 +677,7 @@ const Index = () => {
                           <TableCell>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={saveEdit}>
-                                <Check className="h-3.5 w-3.5 text-green-600" />
+                                <Check className="h-3.5 w-3.5 text-success" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={cancelEdit}>
                                 <X className="h-3.5 w-3.5 text-destructive" />
