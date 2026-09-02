@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Props {
-  onLoad: (pieces: Piece[], fileName: string) => void;
+  onLoad: (pieces: Piece[], fileName: string, entryId: string) => void;
   refreshKey: number;
 }
 
@@ -115,7 +115,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
               ) : (
                 <>
                   <button
-                    onClick={() => onLoad(entry.pieces, entry.nickname || entry.fileName)}
+                    onClick={() => onLoad(entry.pieces, entry.nickname || entry.fileName, entry.id)}
                     className="flex-1 text-left text-sm font-medium truncate hover:underline cursor-pointer"
                   >
                     {entry.nickname || entry.fileName.replace(/\.pdf$/i, "")}
