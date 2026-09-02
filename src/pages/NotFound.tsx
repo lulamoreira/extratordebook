@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import AppHeader from "@/components/AppHeader";
 
 const NotFound = () => {
   const navigate = useNavigate();
@@ -8,7 +9,11 @@ const NotFound = () => {
     navigate("/", { replace: true });
   }, [navigate]);
 
-  return null;
+  return (
+    <div className="min-h-screen bg-background">
+      <AppHeader onGoHome={() => navigate("/", { replace: true })} />
+    </div>
+  );
 };
 
 export default NotFound;
