@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import { saveToHistory, type PartError } from "@/lib/historyStorage";
+import { saveToHistory, updateEntryPieces, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { PDFDocument } from "pdf-lib";
@@ -17,7 +17,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle } from "lucide-react";
+import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
@@ -43,6 +43,47 @@ const getErrorDiagnosis = (errorMsg: string): string => {
   return "Erro inesperado. Tente novamente ou divida o PDF manualmente em partes menores.";
 };
 
+/** Converts binary data to base64 in chunks, avoiding blowing the call stack / freezing the tab. */
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  const CHUNK_SIZE = 8192;
+  const chunks: string[] = [];
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const slice = bytes.subarray(i, i + CHUNK_SIZE);
+    chunks.push(String.fromCharCode.apply(null, slice as unknown as number[]));
+  }
+  return btoa(chunks.join(""));
+};
+
+interface PdfPart {
+  name: string;
+  base64: string;
+  /** 1-based number of this part's first page within the full book. */
+  startPage: number;
+  /** Number of pages contained in this part. */
+  pageCount: number;
+}
+
+interface SplitResult {
+  parts: PdfPart[];
+  totalPages: number;
+}
+
+/** Sorts by page ascending, then codigo, and drops exact duplicates (codigo+pagina+tamanho). */
+const normalizePieces = (input: Piece[]): Piece[] => {
+  const seen = new Set<string>();
+  const unique: Piece[] = [];
+  for (const p of input) {
+    const key = `${p.codigo}||${p.pagina}||${p.tamanho}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(p);
+  }
+  return unique.sort((a, b) => {
+    if (a.pagina !== b.pagina) return a.pagina - b.pagina;
+    return a.codigo.localeCompare(b.codigo);
+  });
+};
+
 const Index = () => {
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -53,56 +94,71 @@ const Index = () => {
   const [processingFiles, setProcessingFiles] = useState<{ name: string; status: "pending" | "processing" | "done" | "error" }[]>([]);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
 
-  const splitPdf = async (file: File): Promise<{ name: string; base64: string }[]> => {
+  const splitPdf = async (file: File): Promise<SplitResult> => {
     const buffer = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(buffer);
     const totalPages = pdfDoc.getPageCount();
     const baseName = file.name.replace(/\.pdf$/i, "");
-    const parts: { name: string; base64: string }[] = [];
+    const parts: PdfPart[] = [];
 
     if (totalPages <= MAX_PAGES_PER_PART) {
-      const base64 = btoa(
-        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
-      );
-      parts.push({ name: file.name, base64 });
-      return parts;
+      parts.push({
+        name: file.name,
+        base64: bytesToBase64(new Uint8Array(buffer)),
+        startPage: 1,
+        pageCount: totalPages,
+      });
+      return { parts, totalPages };
     }
 
     const totalParts = Math.ceil(totalPages / MAX_PAGES_PER_PART);
     for (let partIdx = 0; partIdx < totalParts; partIdx++) {
-      const startPage = partIdx * MAX_PAGES_PER_PART;
-      const endPage = Math.min(startPage + MAX_PAGES_PER_PART, totalPages);
+      const firstIdx = partIdx * MAX_PAGES_PER_PART;
+      const endIdx = Math.min(firstIdx + MAX_PAGES_PER_PART, totalPages);
       const newDoc = await PDFDocument.create();
-      const copiedPages = await newDoc.copyPages(pdfDoc, Array.from({ length: endPage - startPage }, (_, i) => startPage + i));
+      const copiedPages = await newDoc.copyPages(
+        pdfDoc,
+        Array.from({ length: endIdx - firstIdx }, (_, i) => firstIdx + i)
+      );
       copiedPages.forEach((page) => newDoc.addPage(page));
       const pdfBytes = await newDoc.save({ useObjectStreams: true });
-      const base64 = btoa(
-        new Uint8Array(pdfBytes).reduce((data, byte) => data + String.fromCharCode(byte), "")
-      );
-      parts.push({ name: `${baseName}_parte${partIdx + 1}.pdf`, base64 });
+      parts.push({
+        name: `${baseName}_parte${partIdx + 1}.pdf`,
+        base64: bytesToBase64(new Uint8Array(pdfBytes)),
+        startPage: firstIdx + 1,
+        pageCount: endIdx - firstIdx,
+      });
     }
 
-    return parts;
+    return { parts, totalPages };
   };
 
-  const processOnePart = async (base64: string, partName: string): Promise<Piece[]> => {
+  const processOnePart = async (part: PdfPart): Promise<Piece[]> => {
     const { data, error } = await supabase.functions.invoke("extract-pdf", {
-      body: { pdfBase64: base64, fileName: partName },
+      body: { pdfBase64: part.base64, fileName: part.name },
     });
 
     if (error) throw new Error(error.message || "Erro ao processar PDF");
 
     if (data?.pieces && Array.isArray(data.pieces)) {
-      return data.pieces.map((p: any) => ({
-        pagina: p.pagina || 0,
-        secao: p.secao || "",
-        codigo: p.codigo || "",
-        nomePeca: p.nomePeca || "",
-        tamanho: p.tamanho || "",
-        especificacao: p.especificacao || "",
-        cores: p.cores || "4x0",
-      }));
+      return data.pieces.map((p: any) => {
+        // The AI reports the page position *inside the uploaded part*; convert to global.
+        const raw = Number(p.paginaNoArquivo ?? p.pagina ?? 0);
+        const inRange = Number.isFinite(raw) && raw >= 1 && raw <= part.pageCount;
+        const pagina = inRange ? part.startPage + (raw - 1) : raw || 0;
+
+        return {
+          pagina,
+          secao: p.secao || "",
+          codigo: p.codigo || "",
+          nomePeca: p.nomePeca || "",
+          tamanho: p.tamanho || "",
+          especificacao: p.especificacao || "",
+          cores: p.cores || "4x0",
+        };
+      });
     }
     throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
   };
@@ -124,7 +180,7 @@ const Index = () => {
 
     try {
       toast.info("Dividindo PDF em partes de até 10 páginas...");
-      const parts = await splitPdf(file);
+      const { parts, totalPages } = await splitPdf(file);
       setProgress(10);
 
       const fileStatuses = parts.map((p) => ({ name: p.name, status: "pending" as const }));
@@ -132,6 +188,7 @@ const Index = () => {
 
       let allPieces: Piece[] = [];
       let successCount = 0;
+      let partErrors: PartError[] = [];
       const failedParts: { index: number; error: string }[] = [];
 
       // First pass
@@ -142,7 +199,7 @@ const Index = () => {
         setProgress(Math.round(10 + ((i) / parts.length) * 70));
 
         try {
-          const extracted = await processOnePart(parts[i].base64, parts[i].name);
+          const extracted = await processOnePart(parts[i]);
           allPieces = [...allPieces, ...extracted];
           successCount += extracted.length;
           setProcessingFiles((prev) =>
@@ -177,7 +234,7 @@ const Index = () => {
             setProgress(Math.round(80 + ((retry + 1) / MAX_RETRIES) * 15));
 
             try {
-              const extracted = await processOnePart(parts[index].base64, parts[index].name);
+              const extracted = await processOnePart(parts[index]);
               allPieces = [...allPieces, ...extracted];
               successCount += extracted.length;
               setProcessingFiles((prev) =>
@@ -194,12 +251,12 @@ const Index = () => {
         }
 
         // Build error report for parts that ultimately failed
-        var partErrors: PartError[] = stillFailed.map(({ index, error }) => {
-          const partIdx = index;
-          const startPage = partIdx * MAX_PAGES_PER_PART + 1;
-          const endPage = Math.min(startPage + MAX_PAGES_PER_PART - 1, parts.length * MAX_PAGES_PER_PART);
+        partErrors = stillFailed.map(({ index, error }) => {
+          const part = parts[index];
+          const startPage = part.startPage;
+          const endPage = Math.min(startPage + part.pageCount - 1, totalPages);
           return {
-            partName: parts[index].name,
+            partName: part.name,
             errorMessage: error,
             pages: `${startPage}–${endPage}`,
           };
@@ -210,19 +267,24 @@ const Index = () => {
         }
       }
 
-      setPieces(allPieces);
+      const finalPieces = normalizePieces(allPieces);
+      setPieces(finalPieces);
       setProgress(100);
 
-      const errors = typeof partErrors !== "undefined" ? partErrors : [];
+      if (successCount > 0 || partErrors.length > 0) {
+        const entry = saveToHistory(file.name, finalPieces, partErrors);
+        setHistoryRefreshKey((prev) => prev + 1);
 
-      if (successCount > 0 || errors.length > 0) {
-        saveToHistory(file.name, allPieces, errors);
-        setHistoryRefreshKey(prev => prev + 1);
-        setPieces([]);
-        setFileName("");
-
-        if (successCount > 0) {
-          toast.success(`${successCount} peças extraídas e salvas no histórico!`);
+        if (entry.notPersisted) {
+          setCurrentEntryId(null);
+          toast.error("Não foi possível salvar no histórico — baixe o Excel agora para não perder", {
+            duration: 15000,
+          });
+        } else {
+          setCurrentEntryId(entry.id);
+          if (successCount > 0) {
+            toast.success(`${finalPieces.length} peças extraídas e salvas no histórico!`);
+          }
         }
       }
     } catch (err: any) {
@@ -231,7 +293,7 @@ const Index = () => {
       setIsExtracting(false);
       setTimeout(() => setProcessingFiles([]), 3000);
     }
-  }, [pieces]);
+  }, []);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -317,11 +379,27 @@ const Index = () => {
     toast.info("Peça removida");
   };
 
-  const handleLoadFromHistory = (pieces: Piece[], fileName: string) => {
-    setPieces(pieces);
-    setFileName(fileName);
-    toast.success(`Carregado: ${fileName} (${pieces.length} peças)`);
+  const handleLoadFromHistory = (loaded: Piece[], loadedName: string, entryId: string) => {
+    setPieces(normalizePieces(loaded));
+    setFileName(loadedName);
+    setCurrentEntryId(entryId);
+    toast.success(`Carregado: ${loadedName} (${loaded.length} peças)`);
   };
+
+  const handleSaveToHistory = () => {
+    if (!currentEntryId) {
+      toast.error("Nenhuma entrada do histórico carregada para atualizar.");
+      return;
+    }
+    const ok = updateEntryPieces(currentEntryId, pieces);
+    if (ok) {
+      setHistoryRefreshKey((prev) => prev + 1);
+      toast.success("Alterações salvas no histórico!");
+    } else {
+      toast.error("Não foi possível salvar no histórico — baixe o Excel para não perder as edições.");
+    }
+  };
+
 
   const addRow = () => {
     setPieces((prev) => [
@@ -469,6 +547,17 @@ const Index = () => {
                 <Button variant="outline" size="sm" onClick={addRow} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Adicionar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveToHistory}
+                  disabled={!currentEntryId}
+                  className="gap-2"
+                  title={currentEntryId ? "Atualizar a entrada do histórico com as peças da tela" : "Nenhuma entrada do histórico carregada"}
+                >
+                  <Save className="h-4 w-4" />
+                  Salvar alterações no histórico
                 </Button>
                 <Button onClick={handleDownload} className="gap-2" size="sm">
                   <Download className="h-4 w-4" />

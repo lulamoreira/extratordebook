@@ -14,7 +14,7 @@ Seu trabalho é analisar páginas de PDFs de books de campanha e extrair TODAS a
 
 Para CADA peça encontrada, extraia:
 
-1. **pagina**: Número da página onde a peça aparece
+1. **paginaNoArquivo**: Posição da página DENTRO deste arquivo enviado, começando em 1. NÃO use o número impresso na página nem qualquer numeração do book original. Se a peça está na terceira página do arquivo enviado, o valor é 3.
 2. **secao**: Nome da seção/área (ex: "VITRINES — TODAS AS LOJAS", "FACHADA PRIMÁRIA — BSH", "SECUNDÁRIA — RMR", "BACKLIGHT PRIMÁRIA", "SHELF STRIP", etc.)
 3. **codigo**: Código identificador completo da peça (ex: "NAT_MAES_VIT_AUR_TDS_TESTEIRA_AURA_30x24cm")
 4. **nomePeca**: Nome descritivo da peça (ex: "Testeira Aura", "BSH Painel", "Backlight M")
@@ -26,6 +26,7 @@ Para CADA peça encontrada, extraia:
    - Se não for possível determinar, coloque "4x0"
 
 ## Regras adicionais:
+- ATENÇÃO: este arquivo é um FRAGMENTO de um book maior. O campo paginaNoArquivo deve ser SEMPRE relativo a este arquivo (1, 2, 3...), pois a numeração global é reconstruída depois.
 - Extraia TODAS as peças, mesmo que pareçam variações (ex: Aplique 01, Aplique 02)
 - Cada item separado do kit deve ser uma linha individual
 - Ignore páginas de índice, sumário, ou que não contenham peças gráficas
@@ -97,7 +98,11 @@ serve(async (req) => {
                     items: {
                       type: "object",
                       properties: {
-                        pagina: { type: "number", description: "Número da página" },
+                        paginaNoArquivo: {
+                          type: "number",
+                          description:
+                            "Posição da página DENTRO deste arquivo enviado, começando em 1. Não use o número impresso na página.",
+                        },
                         secao: { type: "string", description: "Nome da seção/área" },
                         codigo: { type: "string", description: "Código identificador completo" },
                         nomePeca: { type: "string", description: "Nome descritivo da peça" },
@@ -105,7 +110,7 @@ serve(async (req) => {
                         especificacao: { type: "string", description: "Notas técnicas" },
                         cores: { type: "string", description: "4x4 ou 4x0" },
                       },
-                      required: ["pagina", "secao", "codigo", "nomePeca", "tamanho", "cores"],
+                      required: ["paginaNoArquivo", "secao", "codigo", "nomePeca", "tamanho", "cores"],
                       additionalProperties: false,
                     },
                   },
