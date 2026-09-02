@@ -119,7 +119,8 @@ export async function exportarPlanilhaNatura(pieces: Piece[], baseName: string):
   });
 
   const titulo = (baseName || "EXTRAÇÃO").toUpperCase();
-  await gerarPlanilhaNatura(rows, titulo, titulo);
+  await gerarPlanilhaNatura(herdarGrupos(rows), titulo, titulo);
+
 
   if (failedPieces > 0) {
     toast.warning(
