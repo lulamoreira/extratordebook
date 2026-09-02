@@ -548,6 +548,17 @@ const Index = () => {
                   <Plus className="h-4 w-4" />
                   Adicionar
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSaveToHistory}
+                  disabled={!currentEntryId}
+                  className="gap-2"
+                  title={currentEntryId ? "Atualizar a entrada do histórico com as peças da tela" : "Nenhuma entrada do histórico carregada"}
+                >
+                  <Save className="h-4 w-4" />
+                  Salvar alterações no histórico
+                </Button>
                 <Button onClick={handleDownload} className="gap-2" size="sm">
                   <Download className="h-4 w-4" />
                   Baixar Excel
