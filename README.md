@@ -1,73 +1,36 @@
-# Welcome to your Lovable project
+# Data Extractor Pro
 
-## Project info
+Vou te mandar essa imagem agora e posteriormente um PDF, preciso que você extraia desse PDF, seguindo o exemplo do que te peço aqui agora, extraia numa planilha de excel.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Desse texto lá de cima: NAT_MAES_INT_AUR_PONTO_NATURAL_TESTEIRA_17,5x20cm
 
-## How can I edit this code?
+Extraia o nome da peça: Ponto Natural Testeira
+Extraia o tamanho: 17,5x20
+Extraia o número da página: 83
+Extraia também a especificação que está em Notas: Testeira autoportante
+Nessa especificação extraia que a peça é 4x0 se não tiver nada ali abaixo de Verso e se tiver algo ali, coloque 4x4.
 
-There are several ways of editing your application.
+Solicite o PDF em seguida, ok?
 
-**Use Lovable**
+This project was built with [Lovable](https://lovable.dev).
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+**Live app**: https://extratordebook.lovable.app
 
-Changes made via Lovable will be committed automatically to this repo.
+## Build with Lovable
 
-**Use your preferred IDE**
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/e8349134-e710-49c8-93c2-2e01b4b4cfa0).
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Development
 
-Follow these steps:
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+git clone <this-repository-url>
+cd <repository-name>
 npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
