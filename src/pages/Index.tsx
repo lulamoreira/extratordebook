@@ -427,7 +427,14 @@ const Index = () => {
     entryId: string,
     entryCliente: ClienteId
   ) => {
-    setPieces(normalizePieces(loaded));
+    if (entryCliente === "rommanel") {
+      // Extração da Rommanel — tabela própria, somente leitura.
+      setPieces([]);
+      setRommanelPieces(loaded as unknown as RommanelPiece[]);
+    } else {
+      setRommanelPieces([]);
+      setPieces(normalizePieces(loaded));
+    }
     setFileName(loadedName);
     setCurrentEntryId(entryId);
     // A tabela na tela passa a ser do cliente daquela extração.
@@ -452,6 +459,7 @@ const Index = () => {
 
   const handleGoHome = () => {
     setPieces([]);
+    setRommanelPieces([]);
     setFileName("");
     setEditingRow(null);
     setEditData(null);
@@ -511,7 +519,7 @@ const Index = () => {
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Upload Area */}
-        {pieces.length === 0 && !isExtracting && (
+        {pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
           <Card 
             className={`mb-8 border-dashed border-2 transition-colors ${
               isDragging && extracaoLiberada
