@@ -175,16 +175,22 @@ const Learning = () => {
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="gap-2" disabled={itens.length === 0}>
+                <Button variant="outline" className="gap-2" disabled={doFiltro.length === 0}>
                   <Trash2 className="h-4 w-4" />
                   Apagar todo o aprendizado
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Apagar todo o aprendizado?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    {filtro === "todos"
+                      ? "Apagar o aprendizado de TODOS os clientes?"
+                      : `Apagar o aprendizado de ${LISTA_CLIENTES.find((c) => c.id === filtro)?.nome}?`}
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Todas as especificações e regras aprendidas serão removidas. Não é possível desfazer.
+                    {filtro === "todos"
+                      ? `Serão removidas todas as ${itens.length} especificações e regras de Natura e Rommanel. Não é possível desfazer.`
+                      : `Serão removidas ${doFiltro.length} especificações e regras apenas deste cliente. O aprendizado dos outros clientes continua intacto. Não é possível desfazer.`}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
