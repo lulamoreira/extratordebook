@@ -92,11 +92,12 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
+  const [teachOpen, setTeachOpen] = useState(false);
 
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
     try {
-      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""));
+      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId);
     } finally {
       setIsGeneratingNatura(false);
     }
@@ -141,9 +142,9 @@ const Index = () => {
     return { parts, totalPages };
   };
 
-  const processOnePart = async (part: PdfPart): Promise<Piece[]> => {
+  const processOnePart = async (part: PdfPart, rules: string[] = []): Promise<Piece[]> => {
     const { data, error } = await supabase.functions.invoke("extract-pdf", {
-      body: { pdfBase64: part.base64, fileName: part.name },
+      body: { pdfBase64: part.base64, fileName: part.name, rules },
     });
 
     if (error) throw new Error(error.message || "Erro ao processar PDF");
