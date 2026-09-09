@@ -482,7 +482,28 @@ const Index = () => {
           </p>
         </div>
 
-
+        {/* Seletor de cliente */}
+        <div className="mb-6">
+          <p className="mb-2 text-sm font-semibold text-foreground">Cliente</p>
+          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+            {LISTA_CLIENTES.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => escolherCliente(c.id)}
+                disabled={isExtracting}
+                aria-pressed={cliente === c.id}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
+                  cliente === c.id && "ring-2 ring-primary"
+                )}
+              >
+                <ClienteMark cliente={c.id} size={40} />
+                <span className="text-sm font-bold text-foreground">{c.nome}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* History */}
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
@@ -491,53 +512,69 @@ const Index = () => {
         {pieces.length === 0 && !isExtracting && (
           <Card 
             className={`mb-8 border-dashed border-2 transition-colors ${
-              isDragging 
+              isDragging && extracaoLiberada
                 ? "border-primary bg-primary/5" 
                 : "border-muted-foreground/25"
             }`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDrop={extracaoLiberada ? handleDrop : (e) => e.preventDefault()}
+            onDragOver={extracaoLiberada ? handleDragOver : (e) => e.preventDefault()}
+            onDragLeave={extracaoLiberada ? handleDragLeave : undefined}
           >
             <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="rounded-full bg-muted p-4">
-                <Upload className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-medium text-foreground">
-                  {isDragging ? "Solte o PDF aqui" : "Envie o PDF do Book"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {isDragging 
-                    ? "Solte para iniciar o processamento" 
-                    : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
-                  }
-                </p>
-                {!isDragging && (
-                  <p className="text-xs text-muted-foreground">
-                    PDFs longos são divididos automaticamente em partes de até 10 páginas.
+              {!extracaoLiberada ? (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <ClienteMark cliente={cliente} size={44} />
+                  <p className="text-lg font-medium text-foreground">
+                    Ainda não disponível para {clienteAtual.nome}
                   </p>
-                )}
-              </div>
-              {!isDragging && (
-                <label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <Button asChild className="gap-2 cursor-pointer">
-                    <span>
-                      <FileText className="h-4 w-4" />
-                      Selecionar PDF
-                    </span>
-                  </Button>
-                </label>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    A extração de books da Rommanel entra na próxima etapa. Por enquanto, selecione
+                    Natura para extrair.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-full bg-muted p-4">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-foreground">
+                      {isDragging ? "Solte o PDF aqui" : "Envie o PDF do Book"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isDragging
+                        ? "Solte para iniciar o processamento"
+                        : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
+                      }
+                    </p>
+                    {!isDragging && (
+                      <p className="text-xs text-muted-foreground">
+                        PDFs longos são divididos automaticamente em partes de até 10 páginas.
+                      </p>
+                    )}
+                  </div>
+                  {!isDragging && (
+                    <label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <Button asChild className="gap-2 cursor-pointer">
+                        <span>
+                          <FileText className="h-4 w-4" />
+                          Selecionar PDF
+                        </span>
+                      </Button>
+                    </label>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
         )}
+
 
         {/* Progress */}
         {isExtracting && (
