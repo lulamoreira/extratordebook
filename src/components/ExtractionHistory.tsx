@@ -24,18 +24,23 @@ import {
   Loader2,
   GraduationCap,
 } from "lucide-react";
-import { NaturaMark } from "@/components/NaturaMark";
+import ClienteMark from "@/components/ClienteMark";
 import TeachDialog from "@/components/TeachDialog";
 import { toast } from "sonner";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Logo from "@/components/Logo";
+import { LISTA_CLIENTES, getCliente, type ClienteId } from "@/lib/clientes";
+import { cn } from "@/lib/utils";
+
+type FiltroCliente = ClienteId | "todos";
 
 interface Props {
-  onLoad: (pieces: Piece[], fileName: string, entryId: string) => void;
+  onLoad: (pieces: Piece[], fileName: string, entryId: string, cliente: ClienteId) => void;
   refreshKey: number;
 }
+
 
 const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
