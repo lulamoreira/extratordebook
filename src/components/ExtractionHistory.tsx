@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Loader2,
   GraduationCap,
+  ClipboardCheck,
 } from "lucide-react";
 import ClienteMark from "@/components/ClienteMark";
 import TeachDialog from "@/components/TeachDialog";
@@ -288,6 +289,19 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                         <ClienteMark cliente={entry.cliente} size={40} />
                       )}
                     </Button>
+                    {entry.cliente === "rommanel" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 px-2"
+                        onClick={() => handleOpen(entry)}
+                        disabled={busyId === entry.id}
+                        title="Revisar peça a peça"
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
+                        <span className="hidden text-xs font-semibold sm:inline">Revisar</span>
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

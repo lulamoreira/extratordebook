@@ -129,11 +129,22 @@ export async function updateNickname(id: string, nickname: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
-/** Overwrites the pieces of an existing extraction (used to persist manual edits). */
-export async function updateHistoryPieces(id: string, pieces: Piece[]): Promise<void> {
+/**
+ * Overwrites the pieces of an existing extraction (used to persist manual edits).
+ * `pieceCount` allows storing a different count than the array length
+ * (the Rommanel review stores the number of INCLUDED rows).
+ */
+export async function updateHistoryPieces(
+  id: string,
+  pieces: Piece[],
+  pieceCount?: number
+): Promise<void> {
   const { error } = await supabase
     .from("extractions")
-    .update({ pieces: pieces as unknown as never, piece_count: pieces.length })
+    .update({
+      pieces: pieces as unknown as never,
+      piece_count: pieceCount ?? pieces.length,
+    })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }

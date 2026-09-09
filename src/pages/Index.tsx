@@ -4,7 +4,8 @@ import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/histor
 
 import * as XLSX from "xlsx";
 import { splitPdf, type PdfPart } from "@/lib/pdfSplit";
-import { contarUnidadesCompra, type RommanelPiece } from "@/data/rommanelPieces";
+import { normalizarRommanelPieces, type RommanelPiece } from "@/data/rommanelPieces";
+import RevisaoRommanel from "@/components/RevisaoRommanel";
 import { extrairBookRommanel } from "@/lib/rommanelExtract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,7 @@ const Index = () => {
   const [teachOpen, setTeachOpen] = useState(false);
   const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
+  const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
 
   // Reabre no último cliente usado.
   useEffect(() => {
@@ -171,12 +173,13 @@ const Index = () => {
     if (cliente === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
-        const { pieces: linhas, errors } = await extrairBookRommanel(file, (p) => {
+        const { pieces: linhas, errors, totalPages } = await extrairBookRommanel(file, (p) => {
           setProgress(p.progress);
           setProcessingFiles(p.partes);
         });
         setPieces([]);
         setRommanelPieces(linhas);
+        setRommanelTotalPages(totalPages);
 
         if (errors.length > 0) {
           toast.error(
@@ -428,9 +431,12 @@ const Index = () => {
     entryCliente: ClienteId
   ) => {
     if (entryCliente === "rommanel") {
-      // Extração da Rommanel — tabela própria, somente leitura.
+      // Extração da Rommanel — tela própria de revisão peça a peça.
       setPieces([]);
-      setRommanelPieces(loaded as unknown as RommanelPiece[]);
+      setRommanelPieces(
+        normalizarRommanelPieces(loaded as unknown as RommanelPiece[])
+      );
+      setRommanelTotalPages(undefined);
     } else {
       setRommanelPieces([]);
       setPieces(normalizePieces(loaded));
@@ -806,66 +812,14 @@ const Index = () => {
           </>
         )}
 
-        {/* Resultado Rommanel — somente leitura nesta fase */}
+        {/* Revisão peça a peça — exclusiva da Rommanel */}
         {rommanelPieces.length > 0 && (
-          <>
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {fileName && <span className="text-muted-foreground">{fileName} — </span>}
-                  {rommanelPieces.length} linhas de peça ·{" "}
-                  {contarUnidadesCompra(rommanelPieces)} unidades de compra (colunas da VAREJO)
-                </p>
-              </div>
-              <Button
-                disabled
-                className="gap-2"
-                size="sm"
-                variant="secondary"
-                title="A planilha da Rommanel entra em uma próxima etapa."
-              >
-                <ClienteMark cliente="rommanel" size={44} />
-                Gerar Planilha Padrão Rommanel
-              </Button>
-            </div>
-
-            <div className="rounded-lg border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">Página</TableHead>
-                    <TableHead>Local de instalação</TableHead>
-                    <TableHead>Kit</TableHead>
-                    <TableHead>Nome da Peça</TableHead>
-                    <TableHead>Tamanho</TableHead>
-                    <TableHead>Especificação</TableHead>
-                    <TableHead className="w-12">Cores</TableHead>
-                    <TableHead>Coluna VAREJO</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rommanelPieces.map((p, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium whitespace-pre-line">{p.paginas || p.pagina}</TableCell>
-                      <TableCell className="text-xs font-semibold">{p.localInstalacao}</TableCell>
-                      <TableCell className="text-xs">{p.kit || "—"}</TableCell>
-                      <TableCell className={cn(!p.unidadeCompra && p.kit && "pl-8 text-muted-foreground")}>
-                        {p.nomePeca}
-                      </TableCell>
-                      <TableCell>{p.tamanho}</TableCell>
-                      <TableCell className="max-w-sm whitespace-pre-line text-sm">
-                        {p.especificacao || "—"}
-                      </TableCell>
-                      <TableCell className="font-medium">{p.cores}</TableCell>
-                      <TableCell className="text-xs font-semibold">
-                        {p.unidadeCompra ? p.nomeColunaVarejo : ""}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
+          <RevisaoRommanel
+            pieces={rommanelPieces}
+            fileName={fileName}
+            entryId={currentEntryId}
+            totalPages={rommanelTotalPages}
+          />
         )}
       </div>
 

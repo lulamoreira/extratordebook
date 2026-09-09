@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { splitPdf, paginaGlobal, type PdfPart } from "@/lib/pdfSplit";
 import { carregarRegras } from "@/lib/specLearning";
 import type { PartError } from "@/lib/historyStorage";
-import type { RommanelPiece } from "@/data/rommanelPieces";
+import { normalizarRommanelPieces, type RommanelPiece } from "@/data/rommanelPieces";
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
@@ -65,6 +65,8 @@ async function processarParte(
     unidadeCompra: p.unidadeCompra === true,
     nomeColunaVarejo: p.unidadeCompra === true ? texto(p.nomeColunaVarejo) : "",
     cores: texto(p.cores) || "4x0",
+    incluir: true,
+    camposEmBranco: [],
   }));
 
   return {
@@ -150,10 +152,12 @@ export async function extrairBookRommanel(
   });
 
   // Ordena por página e preserva a ordem original dentro da página (kit antes das filhas).
-  const ordenadas = pieces
-    .map((p, idx) => ({ p, idx }))
-    .sort((a, b) => (a.p.pagina !== b.p.pagina ? a.p.pagina - b.p.pagina : a.idx - b.idx))
-    .map(({ p }) => p);
+  const ordenadas = normalizarRommanelPieces(
+    pieces
+      .map((p, idx) => ({ p, idx }))
+      .sort((a, b) => (a.p.pagina !== b.p.pagina ? a.p.pagina - b.p.pagina : a.idx - b.idx))
+      .map(({ p }) => p)
+  );
 
   report(100);
   return { pieces: ordenadas, errors, totalPages };
