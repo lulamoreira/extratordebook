@@ -723,6 +723,12 @@ const Index = () => {
           </>
         )}
       </div>
+
+      <TeachDialog
+        open={teachOpen}
+        onOpenChange={setTeachOpen}
+        extractionId={currentEntryId}
+      />
     </div>
   );
 };
