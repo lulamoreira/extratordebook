@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle, Save, FileSpreadsheet, Loader2 } from "lucide-react";
+import { NaturaMark } from "@/components/NaturaMark";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
@@ -590,11 +591,12 @@ const Index = () => {
                   className="gap-2"
                   size="sm"
                   variant="secondary"
+                  title="Gerar Planilha Padrão Natura"
                 >
                   {isGeneratingNatura ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <FileSpreadsheet className="h-4 w-4" />
+                    <NaturaMark size={22} />
                   )}
                   Gerar Planilha Padrão Natura
                 </Button>

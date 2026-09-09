@@ -21,10 +21,10 @@ import {
   History,
   FileSpreadsheet,
   AlertTriangle,
-  Sparkles,
   Loader2,
   GraduationCap,
 } from "lucide-react";
+import { NaturaMark } from "@/components/NaturaMark";
 import TeachDialog from "@/components/TeachDialog";
 import { toast } from "sonner";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
