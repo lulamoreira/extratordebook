@@ -123,7 +123,7 @@ export async function exportarPlanilhaNatura(
   let exemplos: SpecExample[] = [];
   let regras: string[] = [];
   try {
-    const aprendizado = await carregarAprendizado();
+    const aprendizado = await carregarAprendizado("natura");
     exemplos = aprendizado.exemplos;
     regras = aprendizado.regras
       .filter((r) => r.alvo === "redacao" || r.alvo === "ambos")

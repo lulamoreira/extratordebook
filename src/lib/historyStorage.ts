@@ -1,5 +1,6 @@
 import { type Piece } from "@/data/extractedPieces";
 import { supabase } from "@/integrations/supabase/client";
+import { CLIENTE_PADRAO, normalizarClienteId, type ClienteId } from "@/lib/clientes";
 
 export interface PartError {
   partName: string;
@@ -15,9 +16,10 @@ export interface HistoryEntry {
   pieceCount: number;
   errors?: PartError[];
   createdAt: string;
+  cliente: ClienteId;
 }
 
-const LIGHT_COLUMNS = "id, file_name, nickname, piece_count, errors, created_at";
+const LIGHT_COLUMNS = "id, file_name, nickname, piece_count, errors, created_at, cliente";
 const PAGE_SIZE = 200;
 
 const toEntry = (row: Record<string, unknown>): HistoryEntry => {
@@ -30,8 +32,10 @@ const toEntry = (row: Record<string, unknown>): HistoryEntry => {
     pieceCount: Number(row.piece_count ?? 0),
     errors: errors.length > 0 ? errors : undefined,
     createdAt: String(row.created_at ?? new Date().toISOString()),
+    cliente: normalizarClienteId(row.cliente),
   };
 };
+
 
 /**
  * Lists every extraction of the current session, newest first.
@@ -99,7 +103,8 @@ export async function saveNaturaRows(id: string, rows: unknown[]): Promise<void>
 export async function saveToHistory(
   fileName: string,
   pieces: Piece[],
-  errors?: PartError[]
+  errors?: PartError[],
+  cliente: ClienteId = CLIENTE_PADRAO
 ): Promise<HistoryEntry> {
   const { data, error } = await supabase
     .from("extractions")
@@ -109,7 +114,9 @@ export async function saveToHistory(
       pieces: pieces as unknown as never,
       errors: (errors ?? []) as unknown as never,
       piece_count: pieces.length,
+      cliente,
     })
+
     .select(LIGHT_COLUMNS)
     .single();
 

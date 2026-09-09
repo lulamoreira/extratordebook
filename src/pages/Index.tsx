@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
 import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
 
@@ -17,7 +17,15 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2 } from "lucide-react";
-import { NaturaMark } from "@/components/NaturaMark";
+import ClienteMark from "@/components/ClienteMark";
+import {
+  CLIENTE_PADRAO,
+  LISTA_CLIENTES,
+  getCliente,
+  lerClienteSalvo,
+  salvarClienteSelecionado,
+  type ClienteId,
+} from "@/lib/clientes";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
@@ -27,6 +35,8 @@ import { bytesToBase64 } from "@/lib/base64";
 import { carregarRegras } from "@/lib/specLearning";
 import TeachDialog from "@/components/TeachDialog";
 import { GraduationCap } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 
 const MAX_PAGES_PER_PART = 10;
 const MAX_RETRIES = 2;
@@ -93,6 +103,21 @@ const Index = () => {
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
   const [teachOpen, setTeachOpen] = useState(false);
+  const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
+
+  // Reabre no último cliente usado.
+  useEffect(() => {
+    setCliente(lerClienteSalvo());
+  }, []);
+
+  const clienteAtual = getCliente(cliente);
+  const extracaoLiberada = clienteAtual.extracaoPronta;
+
+  const escolherCliente = (id: ClienteId) => {
+    if (isExtracting) return;
+    setCliente(id);
+    salvarClienteSelecionado(id);
+  };
 
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
@@ -171,6 +196,10 @@ const Index = () => {
   };
 
   const processFile = useCallback(async (file: File) => {
+    if (!getCliente(cliente).extracaoPronta) {
+      toast.error("A extração deste cliente ainda não está disponível.");
+      return;
+    }
     if (file.type !== "application/pdf") {
       toast.error("Apenas arquivos PDF são aceitos.");
       return;
@@ -180,6 +209,7 @@ const Index = () => {
       toast.error("Arquivo muito grande (máx. 50MB).");
       return;
     }
+
 
     setFileName(file.name);
     setIsExtracting(true);
@@ -194,7 +224,7 @@ const Index = () => {
       setProcessingFiles(fileStatuses);
 
       // Regras de leitura aprendidas com o usuário (alvo 'extracao'/'ambos').
-      const extractionRules = await carregarRegras("extracao");
+      const extractionRules = await carregarRegras(cliente, "extracao");
 
       let allPieces: Piece[] = [];
       let successCount = 0;
@@ -283,7 +313,7 @@ const Index = () => {
 
       if (successCount > 0 || partErrors.length > 0) {
         try {
-          const entry = await saveToHistory(file.name, finalPieces, partErrors);
+          const entry = await saveToHistory(file.name, finalPieces, partErrors, cliente);
           setCurrentEntryId(entry.id);
           setHistoryRefreshKey((prev) => prev + 1);
           if (successCount > 0) {
@@ -303,7 +333,7 @@ const Index = () => {
       setIsExtracting(false);
       setTimeout(() => setProcessingFiles([]), 3000);
     }
-  }, []);
+  }, [cliente]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -389,10 +419,17 @@ const Index = () => {
     toast.info("Peça removida");
   };
 
-  const handleLoadFromHistory = (loaded: Piece[], loadedName: string, entryId: string) => {
+  const handleLoadFromHistory = (
+    loaded: Piece[],
+    loadedName: string,
+    entryId: string,
+    entryCliente: ClienteId
+  ) => {
     setPieces(normalizePieces(loaded));
     setFileName(loadedName);
     setCurrentEntryId(entryId);
+    // A tabela na tela passa a ser do cliente daquela extração.
+    escolherCliente(entryCliente);
     toast.success(`Carregado: ${loadedName} (${loaded.length} peças)`);
   };
 
@@ -445,7 +482,28 @@ const Index = () => {
           </p>
         </div>
 
-
+        {/* Seletor de cliente */}
+        <div className="mb-6">
+          <p className="mb-2 text-sm font-semibold text-foreground">Cliente</p>
+          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+            {LISTA_CLIENTES.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => escolherCliente(c.id)}
+                disabled={isExtracting}
+                aria-pressed={cliente === c.id}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
+                  cliente === c.id && "ring-2 ring-primary"
+                )}
+              >
+                <ClienteMark cliente={c.id} size={40} />
+                <span className="text-sm font-bold text-foreground">{c.nome}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* History */}
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
@@ -454,53 +512,69 @@ const Index = () => {
         {pieces.length === 0 && !isExtracting && (
           <Card 
             className={`mb-8 border-dashed border-2 transition-colors ${
-              isDragging 
+              isDragging && extracaoLiberada
                 ? "border-primary bg-primary/5" 
                 : "border-muted-foreground/25"
             }`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDrop={extracaoLiberada ? handleDrop : (e) => e.preventDefault()}
+            onDragOver={extracaoLiberada ? handleDragOver : (e) => e.preventDefault()}
+            onDragLeave={extracaoLiberada ? handleDragLeave : undefined}
           >
             <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-              <div className="rounded-full bg-muted p-4">
-                <Upload className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-medium text-foreground">
-                  {isDragging ? "Solte o PDF aqui" : "Envie o PDF do Book"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {isDragging 
-                    ? "Solte para iniciar o processamento" 
-                    : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
-                  }
-                </p>
-                {!isDragging && (
-                  <p className="text-xs text-muted-foreground">
-                    PDFs longos são divididos automaticamente em partes de até 10 páginas.
+              {!extracaoLiberada ? (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <ClienteMark cliente={cliente} size={44} />
+                  <p className="text-lg font-medium text-foreground">
+                    Ainda não disponível para {clienteAtual.nome}
                   </p>
-                )}
-              </div>
-              {!isDragging && (
-                <label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <Button asChild className="gap-2 cursor-pointer">
-                    <span>
-                      <FileText className="h-4 w-4" />
-                      Selecionar PDF
-                    </span>
-                  </Button>
-                </label>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    A extração de books da Rommanel entra na próxima etapa. Por enquanto, selecione
+                    Natura para extrair.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-full bg-muted p-4">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-foreground">
+                      {isDragging ? "Solte o PDF aqui" : "Envie o PDF do Book"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {isDragging
+                        ? "Solte para iniciar o processamento"
+                        : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
+                      }
+                    </p>
+                    {!isDragging && (
+                      <p className="text-xs text-muted-foreground">
+                        PDFs longos são divididos automaticamente em partes de até 10 páginas.
+                      </p>
+                    )}
+                  </div>
+                  {!isDragging && (
+                    <label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                      <Button asChild className="gap-2 cursor-pointer">
+                        <span>
+                          <FileText className="h-4 w-4" />
+                          Selecionar PDF
+                        </span>
+                      </Button>
+                    </label>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
         )}
+
 
         {/* Progress */}
         {isExtracting && (
@@ -580,18 +654,22 @@ const Index = () => {
                 </Button>
                 <Button
                   onClick={handleGerarNatura}
-                  disabled={isGeneratingNatura}
+                  disabled={isGeneratingNatura || !clienteAtual.planilhaPronta}
                   className="gap-2"
                   size="sm"
                   variant="secondary"
-                  title="Gerar Planilha Padrão Natura"
+                  title={
+                    clienteAtual.planilhaPronta
+                      ? `Gerar Planilha Padrão ${clienteAtual.nome}`
+                      : "A planilha da Rommanel entra em uma próxima etapa."
+                  }
                 >
                   {isGeneratingNatura ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <NaturaMark size={44} />
+                    <ClienteMark cliente={cliente} size={44} />
                   )}
-                  Gerar Planilha Padrão Natura
+                  Gerar Planilha Padrão {clienteAtual.nome}
                 </Button>
                 <Button
                   onClick={() => setTeachOpen(true)}
@@ -723,6 +801,7 @@ const Index = () => {
         open={teachOpen}
         onOpenChange={setTeachOpen}
         extractionId={currentEntryId}
+        cliente={cliente}
       />
     </div>
   );

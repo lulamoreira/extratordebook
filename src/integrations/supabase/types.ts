@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       extractions: {
         Row: {
+          cliente: string
           created_at: string
           errors: Json
           file_name: string
@@ -28,6 +29,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cliente?: string
           created_at?: string
           errors?: Json
           file_name?: string
@@ -40,6 +42,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          cliente?: string
           created_at?: string
           errors?: Json
           file_name?: string
@@ -91,6 +94,7 @@ export type Database = {
           alvo: string
           arquivo: string
           chave: string
+          cliente: string
           created_at: string
           especificacao_correta: string
           especificacao_ia: string | null
@@ -110,6 +114,7 @@ export type Database = {
           alvo?: string
           arquivo?: string
           chave: string
+          cliente?: string
           created_at?: string
           especificacao_correta: string
           especificacao_ia?: string | null
@@ -129,6 +134,7 @@ export type Database = {
           alvo?: string
           arquivo?: string
           chave?: string
+          cliente?: string
           created_at?: string
           especificacao_correta?: string
           especificacao_ia?: string | null

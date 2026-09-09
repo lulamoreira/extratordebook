@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import type { ClienteId } from "@/lib/clientes";
 import { getNaturaRows } from "@/lib/historyStorage";
 import type { NaturaRow } from "@/lib/naturaSheet";
 import { aprenderDoBook } from "@/lib/bookLearning";
@@ -35,6 +36,11 @@ export interface TeachDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Extração vinculada (histórico ou tabela na tela). Opcional. */
   extractionId?: string | null;
+  /**
+   * Cliente em que o aprendizado será gravado — o da extração vinculada ou,
+   * quando não houver extração, o cliente selecionado na tela.
+   */
+  cliente: ClienteId;
   /** Só permite o modo gabarito (usado na página de aprendizado). */
   somenteGabarito?: boolean;
   /** Gera a Planilha Padrão Natura da extração vinculada (mesma ação do histórico). */
@@ -64,6 +70,7 @@ export const TeachDialog = ({
   open,
   onOpenChange,
   extractionId,
+  cliente,
   somenteGabarito = false,
   onGenerateNatura,
   onLearned,
@@ -161,7 +168,7 @@ export const TeachDialog = ({
         return;
       }
 
-      const { novas, atualizadas } = await contarNovidades(novos);
+      const { novas, atualizadas } = await contarNovidades(novos, cliente);
       setItens(novos);
       setResumo({ novas, atualizadas, ignoradas });
       setEtapa("revisao");
@@ -175,7 +182,7 @@ export const TeachDialog = ({
   const aprender = async () => {
     setSalvando(true);
     try {
-      const res = await salvarExemplos(itens, extractionId ?? undefined);
+      const res = await salvarExemplos(itens, cliente, extractionId ?? undefined);
       toast.success(`Aprendizado salvo — ${res.novas} novas e ${res.atualizadas} atualizadas.`);
       onLearned?.();
       onOpenChange(false);

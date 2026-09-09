@@ -1,6 +1,8 @@
 import ExcelJS from "exceljs";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizarClienteId, type ClienteId } from "@/lib/clientes";
 import type { NaturaRow } from "@/lib/naturaSheet";
+
 
 /* ------------------------------------------------------------------ */
 /* Normalização e chaves                                              */
@@ -68,6 +70,7 @@ export interface AprendizadoItem {
 export interface SpecExample extends AprendizadoItem {
   id: string;
   updatedAt: string;
+  cliente: ClienteId;
 }
 
 export interface ResultadoGravacao {
@@ -301,11 +304,13 @@ const toExample = (row: Record<string, unknown>): SpecExample => ({
   especificacaoCorreta: String(row.especificacao_correta ?? ""),
   origem: (row.origem as Origem) ?? "gabarito",
   updatedAt: String(row.updated_at ?? new Date().toISOString()),
+  cliente: normalizarClienteId(row.cliente),
 });
 
 /** Upsert com precedência: book > planilha > gabarito; entre iguais, o novo vence. */
 export async function salvarExemplos(
   itens: AprendizadoItem[],
+  cliente: ClienteId,
   extractionId?: string | null
 ): Promise<ResultadoGravacao> {
   if (itens.length === 0) return { novas: 0, atualizadas: 0, ignoradas: 0 };
@@ -330,6 +335,7 @@ export async function salvarExemplos(
     const { data, error } = await supabase
       .from("spec_examples")
       .select("chave, origem")
+      .eq("cliente", cliente)
       .in("chave", chaves.slice(i, i + PAGE_SIZE));
     if (error) throw new Error(error.message);
     for (const row of data ?? []) {
@@ -354,6 +360,7 @@ export async function salvarExemplos(
 
     payload.push({
       user_id: userId,
+      cliente,
       tipo: item.tipo,
       alvo: item.alvo,
       chave: item.chave,
@@ -374,7 +381,7 @@ export async function salvarExemplos(
   for (let i = 0; i < payload.length; i += 100) {
     const { error } = await supabase
       .from("spec_examples")
-      .upsert(payload.slice(i, i + 100) as never, { onConflict: "user_id,chave" });
+      .upsert(payload.slice(i, i + 100) as never, { onConflict: "user_id,cliente,chave" });
     if (error) throw new Error(error.message);
   }
 
@@ -383,7 +390,8 @@ export async function salvarExemplos(
 
 /** Quantas dessas chaves já existem (para o resumo do diálogo de confirmação). */
 export async function contarNovidades(
-  itens: AprendizadoItem[]
+  itens: AprendizadoItem[],
+  cliente: ClienteId
 ): Promise<{ novas: number; atualizadas: number }> {
   const chaves = [...new Set(itens.map((i) => i.chave).filter(Boolean))];
   if (chaves.length === 0) return { novas: 0, atualizadas: 0 };
@@ -393,6 +401,7 @@ export async function contarNovidades(
     const { data, error } = await supabase
       .from("spec_examples")
       .select("chave")
+      .eq("cliente", cliente)
       .in("chave", chaves.slice(i, i + PAGE_SIZE));
     if (error) throw new Error(error.message);
     for (const row of data ?? []) existentes.add(String(row.chave));
@@ -402,8 +411,15 @@ export async function contarNovidades(
   return { novas: chaves.length - atualizadas, atualizadas };
 }
 
+
+/** Filtro de leitura: um cliente específico ou todos. */
+export type FiltroCliente = ClienteId | "todos";
+
 /** Listagem paginada — nunca um select solto (trunca em 1000 silenciosamente). */
-export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
+export async function listarExemplos(
+  cliente: FiltroCliente,
+  tipo?: Tipo
+): Promise<SpecExample[]> {
   const out: SpecExample[] = [];
   let from = 0;
 
@@ -413,6 +429,7 @@ export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
       .select("*", { count: "exact" })
       .order("updated_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
+    if (cliente !== "todos") query = query.eq("cliente", cliente);
     if (tipo) query = query.eq("tipo", tipo);
 
     const { data, error, count } = await query;
@@ -428,10 +445,10 @@ export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
   return out;
 }
 
-export async function contarAprendizado(): Promise<number> {
-  const { count, error } = await supabase
-    .from("spec_examples")
-    .select("id", { count: "exact", head: true });
+export async function contarAprendizado(cliente: FiltroCliente = "todos"): Promise<number> {
+  let query = supabase.from("spec_examples").select("id", { count: "exact", head: true });
+  if (cliente !== "todos") query = query.eq("cliente", cliente);
+  const { count, error } = await query;
   if (error) return 0;
   return count ?? 0;
 }
@@ -441,9 +458,13 @@ export async function excluirExemplo(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export async function excluirTodosExemplos(tipo?: Tipo): Promise<void> {
+export async function excluirTodosExemplos(
+  cliente: FiltroCliente,
+  tipo?: Tipo
+): Promise<void> {
   let query = supabase.from("spec_examples").delete();
   query = tipo ? query.eq("tipo", tipo) : query.not("id", "is", null);
+  if (cliente !== "todos") query = query.eq("cliente", cliente);
   const { error } = await query;
   if (error) throw new Error(error.message);
 }
@@ -457,8 +478,8 @@ export interface Aprendizado {
   regras: SpecExample[];
 }
 
-export async function carregarAprendizado(): Promise<Aprendizado> {
-  const todos = await listarExemplos();
+export async function carregarAprendizado(cliente: ClienteId): Promise<Aprendizado> {
+  const todos = await listarExemplos(cliente);
   return {
     exemplos: todos.filter((e) => e.tipo === "exemplo"),
     regras: todos.filter((e) => e.tipo === "regra"),
@@ -466,14 +487,19 @@ export async function carregarAprendizado(): Promise<Aprendizado> {
 }
 
 /** Regras (texto) filtradas pelo alvo, mais recentes primeiro. */
-export async function carregarRegras(alvo: "extracao" | "redacao", limite = 20): Promise<string[]> {
+export async function carregarRegras(
+  cliente: ClienteId,
+  alvo: "extracao" | "redacao",
+  limite = 20
+): Promise<string[]> {
   try {
-    const regras = await listarExemplos("regra");
+    const regras = await listarExemplos(cliente, "regra");
     return regras
       .filter((r) => r.alvo === alvo || r.alvo === "ambos")
       .slice(0, limite)
       .map((r) => r.especificacaoCorreta.trim())
       .filter(Boolean);
+
   } catch (err) {
     console.warn("Não foi possível carregar as regras de aprendizado:", err);
     return [];

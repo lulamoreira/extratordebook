@@ -24,18 +24,23 @@ import {
   Loader2,
   GraduationCap,
 } from "lucide-react";
-import { NaturaMark } from "@/components/NaturaMark";
+import ClienteMark from "@/components/ClienteMark";
 import TeachDialog from "@/components/TeachDialog";
 import { toast } from "sonner";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Logo from "@/components/Logo";
+import { LISTA_CLIENTES, getCliente, type ClienteId } from "@/lib/clientes";
+import { cn } from "@/lib/utils";
+
+type FiltroCliente = ClienteId | "todos";
 
 interface Props {
-  onLoad: (pieces: Piece[], fileName: string, entryId: string) => void;
+  onLoad: (pieces: Piece[], fileName: string, entryId: string, cliente: ClienteId) => void;
   refreshKey: number;
 }
+
 
 const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -45,6 +50,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [teachId, setTeachId] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<FiltroCliente>("todos");
 
   const reload = useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsLoading(true);
@@ -69,7 +75,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      onLoad(pieces, entry.nickname || entry.fileName, entry.id);
+      onLoad(pieces, entry.nickname || entry.fileName, entry.id, entry.cliente);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível carregar as peças desta extração.");
@@ -159,12 +165,30 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     }
   };
 
+  const visiveis = filtro === "todos" ? history : history.filter((e) => e.cliente === filtro);
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-bold">
-          <History className="h-4 w-4 text-muted-foreground" />
-          Últimas extrações
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base font-bold">
+          <span className="flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            Últimas extrações
+          </span>
+          <div className="flex items-center gap-1">
+            {([{ id: "todos", nome: "Todos" }, ...LISTA_CLIENTES] as { id: FiltroCliente; nome: string }[]).map((op) => (
+              <Button
+                key={op.id}
+                type="button"
+                variant={filtro === op.id ? "default" : "secondary"}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setFiltro(op.id)}
+              >
+                {op.nome}
+              </Button>
+            ))}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -174,20 +198,24 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
               <Skeleton key={i} className="h-10 w-full rounded-md" />
             ))}
           </div>
-        ) : history.length === 0 ? (
+        ) : visiveis.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="opacity-30 grayscale">
               <Logo size={40} />
             </div>
             <p className="text-sm text-muted-foreground">
-              Nenhuma extração ainda — envie um PDF para começar
+              {history.length === 0
+                ? "Nenhuma extração ainda — envie um PDF para começar"
+                : "Nenhuma extração deste cliente"}
             </p>
           </div>
         ) : (
-          history.map((entry) => (
+          visiveis.map((entry) => (
             <div key={entry.id} className="space-y-0">
               <div className="group flex items-center gap-2 rounded-md bg-background px-3 py-2 transition-colors hover:bg-muted">
+                <ClienteMark cliente={entry.cliente} size={20} />
                 <FileSpreadsheet className="h-4 w-4 shrink-0 text-primary" />
+
 
                 {editingId === entry.id ? (
                   <div className="flex flex-1 items-center gap-1">
@@ -247,13 +275,17 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => generateNatura(entry)}
-                      disabled={busyId === entry.id}
-                      title="Gerar Planilha Padrão Natura"
+                      disabled={busyId === entry.id || !getCliente(entry.cliente).planilhaPronta}
+                      title={
+                        getCliente(entry.cliente).planilhaPronta
+                          ? `Gerar Planilha Padrão ${getCliente(entry.cliente).nome}`
+                          : "A planilha da Rommanel entra em uma próxima etapa."
+                      }
                     >
                       {busyId === entry.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <NaturaMark size={40} />
+                        <ClienteMark cliente={entry.cliente} size={40} />
                       )}
                     </Button>
                     <Button
@@ -302,6 +334,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
         open={teachId !== null}
         onOpenChange={(open) => !open && setTeachId(null)}
         extractionId={teachId}
+        cliente={history.find((e) => e.id === teachId)?.cliente ?? "natura"}
         onGenerateNatura={
           teachId
             ? async () => {
