@@ -333,7 +333,7 @@ const Index = () => {
       setIsExtracting(false);
       setTimeout(() => setProcessingFiles([]), 3000);
     }
-  }, []);
+  }, [cliente]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -419,10 +419,17 @@ const Index = () => {
     toast.info("Peça removida");
   };
 
-  const handleLoadFromHistory = (loaded: Piece[], loadedName: string, entryId: string) => {
+  const handleLoadFromHistory = (
+    loaded: Piece[],
+    loadedName: string,
+    entryId: string,
+    entryCliente: ClienteId
+  ) => {
     setPieces(normalizePieces(loaded));
     setFileName(loadedName);
     setCurrentEntryId(entryId);
+    // A tabela na tela passa a ser do cliente daquela extração.
+    escolherCliente(entryCliente);
     toast.success(`Carregado: ${loadedName} (${loaded.length} peças)`);
   };
 
