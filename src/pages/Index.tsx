@@ -3,7 +3,9 @@ import { classificarTipo, type Piece } from "@/data/extractedPieces";
 import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
-import { PDFDocument } from "pdf-lib";
+import { splitPdf, type PdfPart } from "@/lib/pdfSplit";
+import { contarUnidadesCompra, type RommanelPiece } from "@/data/rommanelPieces";
+import { extrairBookRommanel } from "@/lib/rommanelExtract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,14 +33,14 @@ import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
 import AppHeader from "@/components/AppHeader";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
-import { bytesToBase64 } from "@/lib/base64";
+
 import { carregarRegras } from "@/lib/specLearning";
 import TeachDialog from "@/components/TeachDialog";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 
-const MAX_PAGES_PER_PART = 10;
+
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
 
@@ -60,19 +62,6 @@ const getErrorDiagnosis = (errorMsg: string): string => {
 };
 
 
-interface PdfPart {
-  name: string;
-  base64: string;
-  /** 1-based number of this part's first page within the full book. */
-  startPage: number;
-  /** Number of pages contained in this part. */
-  pageCount: number;
-}
-
-interface SplitResult {
-  parts: PdfPart[];
-  totalPages: number;
-}
 
 /** Sorts by page ascending, then codigo, and drops exact duplicates (codigo+pagina+tamanho). */
 const normalizePieces = (input: Piece[]): Piece[] => {
@@ -104,6 +93,7 @@ const Index = () => {
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
   const [teachOpen, setTeachOpen] = useState(false);
   const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
+  const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
 
   // Reabre no último cliente usado.
   useEffect(() => {
@@ -128,44 +118,6 @@ const Index = () => {
     }
   };
 
-  const splitPdf = async (file: File): Promise<SplitResult> => {
-    const buffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(buffer);
-    const totalPages = pdfDoc.getPageCount();
-    const baseName = file.name.replace(/\.pdf$/i, "");
-    const parts: PdfPart[] = [];
-
-    if (totalPages <= MAX_PAGES_PER_PART) {
-      parts.push({
-        name: file.name,
-        base64: bytesToBase64(new Uint8Array(buffer)),
-        startPage: 1,
-        pageCount: totalPages,
-      });
-      return { parts, totalPages };
-    }
-
-    const totalParts = Math.ceil(totalPages / MAX_PAGES_PER_PART);
-    for (let partIdx = 0; partIdx < totalParts; partIdx++) {
-      const firstIdx = partIdx * MAX_PAGES_PER_PART;
-      const endIdx = Math.min(firstIdx + MAX_PAGES_PER_PART, totalPages);
-      const newDoc = await PDFDocument.create();
-      const copiedPages = await newDoc.copyPages(
-        pdfDoc,
-        Array.from({ length: endIdx - firstIdx }, (_, i) => firstIdx + i)
-      );
-      copiedPages.forEach((page) => newDoc.addPage(page));
-      const pdfBytes = await newDoc.save({ useObjectStreams: true });
-      parts.push({
-        name: `${baseName}_parte${partIdx + 1}.pdf`,
-        base64: bytesToBase64(new Uint8Array(pdfBytes)),
-        startPage: firstIdx + 1,
-        pageCount: endIdx - firstIdx,
-      });
-    }
-
-    return { parts, totalPages };
-  };
 
   const processOnePart = async (part: PdfPart, rules: string[] = []): Promise<Piece[]> => {
     const { data, error } = await supabase.functions.invoke("extract-pdf", {
