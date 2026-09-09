@@ -77,6 +77,7 @@ export const TeachDialog = ({
   const [itens, setItens] = useState<AprendizadoItem[]>([]);
   const [resumo, setResumo] = useState({ novas: 0, atualizadas: 0, ignoradas: 0 });
   const [salvando, setSalvando] = useState(false);
+  const [gerandoNatura, setGerandoNatura] = useState(false);
 
   useEffect(() => {
     if (!open) return;
