@@ -313,7 +313,7 @@ const Index = () => {
 
       if (successCount > 0 || partErrors.length > 0) {
         try {
-          const entry = await saveToHistory(file.name, finalPieces, partErrors);
+          const entry = await saveToHistory(file.name, finalPieces, partErrors, cliente);
           setCurrentEntryId(entry.id);
           setHistoryRefreshKey((prev) => prev + 1);
           if (successCount > 0) {
