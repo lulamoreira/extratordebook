@@ -20,6 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ClienteMark from "@/components/ClienteMark";
+import { LISTA_CLIENTES, lerClienteSalvo, type ClienteId } from "@/lib/clientes";
 import {
   excluirExemplo,
   excluirTodosExemplos,
@@ -28,6 +30,9 @@ import {
   type SpecExample,
   type Tipo,
 } from "@/lib/specLearning";
+
+type FiltroCliente = ClienteId | "todos";
+
 
 const ORIGEM_LABEL: Record<string, string> = {
   comparacao_planilha: "Planilha",
