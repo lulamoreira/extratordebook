@@ -334,6 +334,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
         open={teachId !== null}
         onOpenChange={(open) => !open && setTeachId(null)}
         extractionId={teachId}
+        cliente={history.find((e) => e.id === teachId)?.cliente ?? "natura"}
         onGenerateNatura={
           teachId
             ? async () => {
