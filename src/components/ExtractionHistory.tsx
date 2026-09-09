@@ -79,7 +79,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      await exportarPlanilhaNatura(pieces, entryLabel(entry));
+      await exportarPlanilhaNatura(pieces, entryLabel(entry), entry.id);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível gerar a planilha padrão Natura.");
@@ -252,6 +252,15 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       ) : (
                         <Sparkles className="h-3.5 w-3.5 text-primary" />
                       )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setTeachId(entry.id)}
+                      title="Ensinar com minha planilha"
+                    >
+                      <GraduationCap className="h-3.5 w-3.5 text-primary" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
                       <Pencil className="h-3.5 w-3.5" />
