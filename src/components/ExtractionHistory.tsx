@@ -50,6 +50,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [teachId, setTeachId] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<FiltroCliente>("todos");
 
   const reload = useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsLoading(true);
@@ -74,7 +75,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      onLoad(pieces, entry.nickname || entry.fileName, entry.id);
+      onLoad(pieces, entry.nickname || entry.fileName, entry.id, entry.cliente);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível carregar as peças desta extração.");
