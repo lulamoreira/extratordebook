@@ -42,7 +42,7 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfBase64, fileName } = await req.json();
+    const { pdfBase64, fileName, rules } = await req.json();
 
     if (!pdfBase64) {
       return new Response(

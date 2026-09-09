@@ -64,7 +64,7 @@ serve(async (req) => {
   }
 
   try {
-    const { pieces } = await req.json();
+    const { pieces, examples, rules } = await req.json();
 
     if (!Array.isArray(pieces) || pieces.length === 0) {
       return new Response(JSON.stringify({ error: "pieces is required" }), {
