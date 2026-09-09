@@ -237,7 +237,9 @@ const Learning = () => {
                       key={i.id}
                       className="flex items-start justify-between gap-3 rounded-lg bg-muted/40 p-3"
                     >
-                      <div className="min-w-0">
+                      <ClienteMark cliente={i.cliente} size={22} className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+
                         {i.tipo === "exemplo" && (
                           <p className="text-sm font-semibold text-foreground">
                             {i.item || "—"}
