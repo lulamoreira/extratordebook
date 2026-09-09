@@ -1,6 +1,8 @@
 import ExcelJS from "exceljs";
 import { supabase } from "@/integrations/supabase/client";
+import type { ClienteId } from "@/lib/clientes";
 import type { NaturaRow } from "@/lib/naturaSheet";
+
 
 /* ------------------------------------------------------------------ */
 /* Normalização e chaves                                              */
