@@ -296,6 +296,12 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
           ))
         )}
       </CardContent>
+
+      <TeachDialog
+        open={teachId !== null}
+        onOpenChange={(open) => !open && setTeachId(null)}
+        extractionId={teachId}
+      />
     </Card>
   );
 };
