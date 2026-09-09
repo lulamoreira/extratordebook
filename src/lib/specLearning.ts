@@ -381,6 +381,27 @@ export async function salvarExemplos(
   return { novas, atualizadas, ignoradas };
 }
 
+/** Quantas dessas chaves já existem (para o resumo do diálogo de confirmação). */
+export async function contarNovidades(
+  itens: AprendizadoItem[]
+): Promise<{ novas: number; atualizadas: number }> {
+  const chaves = [...new Set(itens.map((i) => i.chave).filter(Boolean))];
+  if (chaves.length === 0) return { novas: 0, atualizadas: 0 };
+
+  const existentes = new Set<string>();
+  for (let i = 0; i < chaves.length; i += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("spec_examples")
+      .select("chave")
+      .in("chave", chaves.slice(i, i + PAGE_SIZE));
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) existentes.add(String(row.chave));
+  }
+
+  const atualizadas = chaves.filter((c) => existentes.has(c)).length;
+  return { novas: chaves.length - atualizadas, atualizadas };
+}
+
 /** Listagem paginada — nunca um select solto (trunca em 1000 silenciosamente). */
 export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
   const out: SpecExample[] = [];
