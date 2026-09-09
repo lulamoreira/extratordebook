@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import type { ClienteId } from "@/lib/clientes";
 import { getNaturaRows } from "@/lib/historyStorage";
 import type { NaturaRow } from "@/lib/naturaSheet";
 import { aprenderDoBook } from "@/lib/bookLearning";
