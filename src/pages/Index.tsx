@@ -598,6 +598,16 @@ const Index = () => {
                   )}
                   Gerar Planilha Padrão Natura
                 </Button>
+                <Button
+                  onClick={() => setTeachOpen(true)}
+                  className="gap-2"
+                  size="sm"
+                  variant="outline"
+                  title="Ensinar com minha planilha"
+                >
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                  Ensinar com minha planilha
+                </Button>
               </div>
             </div>
 
