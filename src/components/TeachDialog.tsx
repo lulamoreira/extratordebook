@@ -98,6 +98,22 @@ export const TeachDialog = ({
 
   const temGerado = (naturaRows?.length ?? 0) > 0;
 
+  const gerarNatura = async () => {
+    if (!onGenerateNatura || !extractionId) return;
+    setGerandoNatura(true);
+    try {
+      await onGenerateNatura();
+      const rows = await getNaturaRows(extractionId);
+      setNaturaRows((rows ?? []) as NaturaRow[]);
+      toast.success("Planilha gerada! O modo comparativo foi liberado.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível gerar a planilha desta extração.");
+    } finally {
+      setGerandoNatura(false);
+    }
+  };
+
   const analisar = async () => {
     if (!planilha) {
       toast.error("Envie a planilha editada.");
