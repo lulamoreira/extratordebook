@@ -105,16 +105,18 @@ function desmesclar(
   const merges = ((ws.model as unknown as { merges?: string[] }).merges ?? []).slice();
   for (const range of merges) {
     try {
-      const dim = (ws.getCell(range.split(":")[0]) as unknown as { row: number }).row;
-      void dim;
       const [ini, fim] = range.split(":");
       const a = ws.getCell(ini);
       const b = ws.getCell(fim || ini);
+      const ar = Number(a.row);
+      const br = Number(b.row);
+      const ac = Number(a.col);
+      const bc = Number(b.col);
       const caixa = {
-        top: Math.min(a.row as number, b.row as number),
-        bottom: Math.max(a.row as number, b.row as number),
-        left: Math.min(a.col as number, b.col as number),
-        right: Math.max(a.col as number, b.col as number),
+        top: Math.min(ar, br),
+        bottom: Math.max(ar, br),
+        left: Math.min(ac, bc),
+        right: Math.max(ac, bc),
       };
       if (filtro(caixa)) ws.unMergeCells(range);
     } catch {
