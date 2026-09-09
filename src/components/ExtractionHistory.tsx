@@ -21,10 +21,10 @@ import {
   History,
   FileSpreadsheet,
   AlertTriangle,
-  Sparkles,
   Loader2,
   GraduationCap,
 } from "lucide-react";
+import { NaturaMark } from "@/components/NaturaMark";
 import TeachDialog from "@/components/TeachDialog";
 import { toast } from "sonner";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
@@ -228,14 +228,14 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                 {editingId !== entry.id && (
                   <div className="flex gap-0.5">
                     {entry.errors && entry.errors.length > 0 && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleErrors(entry.id)} title="Ver relatório de erros">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleErrors(entry.id)} title="Ver relatório de erros">
                         <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                       </Button>
                     )}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8"
                       onClick={() => downloadEntry(entry)}
                       disabled={busyId === entry.id}
                       title="Baixar Excel"
@@ -245,7 +245,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8"
                       onClick={() => generateNatura(entry)}
                       disabled={busyId === entry.id}
                       title="Gerar Planilha Padrão Natura"
@@ -253,23 +253,23 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       {busyId === entry.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <NaturaMark size={20} />
                       )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 gap-1 px-2"
+                      className="h-8 gap-1 px-2"
                       onClick={() => setTeachId(entry.id)}
                       title="Ensinar com minha planilha"
                     >
                       <GraduationCap className="h-3.5 w-3.5 text-primary" />
                       <span className="hidden text-xs font-semibold sm:inline">Ensinar</span>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startRename(entry)} title="Renomear">
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(entry.id)} title="Remover">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(entry.id)} title="Remover">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </div>
