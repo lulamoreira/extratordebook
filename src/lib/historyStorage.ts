@@ -103,7 +103,8 @@ export async function saveNaturaRows(id: string, rows: unknown[]): Promise<void>
 export async function saveToHistory(
   fileName: string,
   pieces: Piece[],
-  errors?: PartError[]
+  errors?: PartError[],
+  cliente: ClienteId = CLIENTE_PADRAO
 ): Promise<HistoryEntry> {
   const { data, error } = await supabase
     .from("extractions")
@@ -113,7 +114,9 @@ export async function saveToHistory(
       pieces: pieces as unknown as never,
       errors: (errors ?? []) as unknown as never,
       piece_count: pieces.length,
+      cliente,
     })
+
     .select(LIGHT_COLUMNS)
     .single();
 
