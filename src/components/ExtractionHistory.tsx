@@ -275,13 +275,17 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => generateNatura(entry)}
-                      disabled={busyId === entry.id}
-                      title="Gerar Planilha Padrão Natura"
+                      disabled={busyId === entry.id || !getCliente(entry.cliente).planilhaPronta}
+                      title={
+                        getCliente(entry.cliente).planilhaPronta
+                          ? `Gerar Planilha Padrão ${getCliente(entry.cliente).nome}`
+                          : "A planilha da Rommanel entra em uma próxima etapa."
+                      }
                     >
                       {busyId === entry.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <NaturaMark size={40} />
+                        <ClienteMark cliente={entry.cliente} size={40} />
                       )}
                     </Button>
                     <Button
