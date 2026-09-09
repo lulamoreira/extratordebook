@@ -1,3 +1,5 @@
+import naturaLogo from "@/assets/natura-logo.png";
+
 interface Props {
   size?: number;
   className?: string;
@@ -6,7 +8,7 @@ interface Props {
 export const NaturaMark = ({ size = 20, className = "" }: Props) => {
   return (
     <img
-      src="/src/assets/natura-logo.png"
+      src={naturaLogo}
       alt="Natura"
       draggable={false}
       className={`shrink-0 object-contain ${className}`}
