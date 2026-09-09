@@ -182,6 +182,7 @@ serve(async (req) => {
                       },
                       required: [
                         "paginaNoArquivo",
+                        "paginas",
                         "localInstalacao",
                         "kit",
                         "nomePeca",
