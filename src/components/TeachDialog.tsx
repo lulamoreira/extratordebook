@@ -70,6 +70,7 @@ export const TeachDialog = ({
   open,
   onOpenChange,
   extractionId,
+  cliente,
   somenteGabarito = false,
   onGenerateNatura,
   onLearned,
@@ -167,7 +168,7 @@ export const TeachDialog = ({
         return;
       }
 
-      const { novas, atualizadas } = await contarNovidades(novos);
+      const { novas, atualizadas } = await contarNovidades(novos, cliente);
       setItens(novos);
       setResumo({ novas, atualizadas, ignoradas });
       setEtapa("revisao");
@@ -181,7 +182,7 @@ export const TeachDialog = ({
   const aprender = async () => {
     setSalvando(true);
     try {
-      const res = await salvarExemplos(itens, extractionId ?? undefined);
+      const res = await salvarExemplos(itens, cliente, extractionId ?? undefined);
       toast.success(`Aprendizado salvo — ${res.novas} novas e ${res.atualizadas} atualizadas.`);
       onLearned?.();
       onOpenChange(false);
