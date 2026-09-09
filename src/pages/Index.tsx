@@ -173,12 +173,13 @@ const Index = () => {
     if (cliente === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
-        const { pieces: linhas, errors } = await extrairBookRommanel(file, (p) => {
+        const { pieces: linhas, errors, totalPages } = await extrairBookRommanel(file, (p) => {
           setProgress(p.progress);
           setProcessingFiles(p.partes);
         });
         setPieces([]);
         setRommanelPieces(linhas);
+        setRommanelTotalPages(totalPages);
 
         if (errors.length > 0) {
           toast.error(
