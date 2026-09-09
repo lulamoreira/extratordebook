@@ -142,7 +142,30 @@ const Learning = () => {
             <p className="text-sm text-muted-foreground">
               O que o app aprendeu com as suas planilhas.
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                variant={filtro === "todos" ? "default" : "secondary"}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setFiltro("todos")}
+              >
+                Todos ({itens.length})
+              </Button>
+              {LISTA_CLIENTES.map((c) => (
+                <Button
+                  key={c.id}
+                  variant={filtro === c.id ? "default" : "secondary"}
+                  size="sm"
+                  className="h-7 gap-1.5 px-2 text-xs"
+                  onClick={() => setFiltro(c.id)}
+                >
+                  <ClienteMark cliente={c.id} size={16} />
+                  {c.nome} ({porCliente.get(c.id) ?? 0})
+                </Button>
+              ))}
+            </div>
           </div>
+
 
           <div className="flex items-center gap-2">
             <Button onClick={() => setTeachOpen(true)} className="gap-2">
