@@ -150,10 +150,12 @@ export async function extrairBookRommanel(
   });
 
   // Ordena por página e preserva a ordem original dentro da página (kit antes das filhas).
-  const ordenadas = pieces
-    .map((p, idx) => ({ p, idx }))
-    .sort((a, b) => (a.p.pagina !== b.p.pagina ? a.p.pagina - b.p.pagina : a.idx - b.idx))
-    .map(({ p }) => p);
+  const ordenadas = normalizarRommanelPieces(
+    pieces
+      .map((p, idx) => ({ p, idx }))
+      .sort((a, b) => (a.p.pagina !== b.p.pagina ? a.p.pagina - b.p.pagina : a.idx - b.idx))
+      .map(({ p }) => p)
+  );
 
   report(100);
   return { pieces: ordenadas, errors, totalPages };
