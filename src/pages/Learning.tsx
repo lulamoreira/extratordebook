@@ -282,6 +282,7 @@ const Learning = () => {
       <TeachDialog
         open={teachOpen}
         onOpenChange={setTeachOpen}
+        cliente={filtro === "todos" ? lerClienteSalvo() : filtro}
         somenteGabarito
         onLearned={carregar}
       />
