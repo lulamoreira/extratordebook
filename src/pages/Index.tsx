@@ -103,6 +103,21 @@ const Index = () => {
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
   const [teachOpen, setTeachOpen] = useState(false);
+  const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
+
+  // Reabre no último cliente usado.
+  useEffect(() => {
+    setCliente(lerClienteSalvo());
+  }, []);
+
+  const clienteAtual = getCliente(cliente);
+  const extracaoLiberada = clienteAtual.extracaoPronta;
+
+  const escolherCliente = (id: ClienteId) => {
+    if (isExtracting) return;
+    setCliente(id);
+    salvarClienteSelecionado(id);
+  };
 
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
@@ -204,7 +219,7 @@ const Index = () => {
       setProcessingFiles(fileStatuses);
 
       // Regras de leitura aprendidas com o usuário (alvo 'extracao'/'ambos').
-      const extractionRules = await carregarRegras("extracao");
+      const extractionRules = await carregarRegras(cliente, "extracao");
 
       let allPieces: Piece[] = [];
       let successCount = 0;
