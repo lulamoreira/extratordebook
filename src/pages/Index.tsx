@@ -23,6 +23,10 @@ import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
 import AppHeader from "@/components/AppHeader";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
+import { bytesToBase64 } from "@/lib/base64";
+import { carregarRegras } from "@/lib/specLearning";
+import TeachDialog from "@/components/TeachDialog";
+import { GraduationCap } from "lucide-react";
 
 const MAX_PAGES_PER_PART = 10;
 const MAX_RETRIES = 2;
@@ -45,16 +49,6 @@ const getErrorDiagnosis = (errorMsg: string): string => {
   return "Erro inesperado. Tente novamente ou divida o PDF manualmente em partes menores.";
 };
 
-/** Converts binary data to base64 in chunks, avoiding blowing the call stack / freezing the tab. */
-const bytesToBase64 = (bytes: Uint8Array): string => {
-  const CHUNK_SIZE = 8192;
-  const chunks: string[] = [];
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    const slice = bytes.subarray(i, i + CHUNK_SIZE);
-    chunks.push(String.fromCharCode.apply(null, slice as unknown as number[]));
-  }
-  return btoa(chunks.join(""));
-};
 
 interface PdfPart {
   name: string;
