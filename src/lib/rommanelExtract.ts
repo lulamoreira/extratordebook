@@ -49,6 +49,7 @@ async function processarParte(
 
   const pieces: RommanelPiece[] = data.pieces.map((p: Record<string, unknown>) => ({
     pagina: paginaGlobal(part, p.paginaNoArquivo ?? p.pagina),
+    paginas: texto(p.paginas) || String(paginaGlobal(part, p.paginaNoArquivo ?? p.pagina)),
     localInstalacao: texto(p.localInstalacao) || secaoCorrente,
     kit: texto(p.kit),
     nomePeca: texto(p.nomePeca),

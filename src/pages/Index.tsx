@@ -846,7 +846,7 @@ const Index = () => {
                 <TableBody>
                   {rommanelPieces.map((p, i) => (
                     <TableRow key={i}>
-                      <TableCell className="font-medium">{p.pagina}</TableCell>
+                      <TableCell className="font-medium whitespace-pre-line">{p.paginas || p.pagina}</TableCell>
                       <TableCell className="text-xs font-semibold">{p.localInstalacao}</TableCell>
                       <TableCell className="text-xs">{p.kit || "—"}</TableCell>
                       <TableCell className={cn(!p.unidadeCompra && p.kit && "pl-8 text-muted-foreground")}>

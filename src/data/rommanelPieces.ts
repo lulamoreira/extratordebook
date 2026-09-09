@@ -5,6 +5,8 @@
 export interface RommanelPiece {
   /** Página no book completo (1-based). */
   pagina: number;
+  /** Páginas empilhadas com \n na mesma ordem de nomePeca/tamanho (kits de banner). Peças normais: mesmo valor de pagina. */
+  paginas: string;
   /** Vem da página de capa de seção (ex: "VITRINE", "AQUÁRIO"). */
   localInstalacao: string;
   /** Nome do kit; vazio quando é peça avulsa. */
