@@ -1,7 +1,10 @@
-import { Home } from "lucide-react";
+import { useEffect, useState } from "react";
+import { GraduationCap, Home } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { contarAprendizado } from "@/lib/specLearning";
 
 export interface AppHeaderProps {
   /** Resets the screen back to the initial upload + history view. */
@@ -13,9 +16,26 @@ export interface AppHeaderProps {
 
 export const AppHeader = ({ onGoHome, busy = false, className }: AppHeaderProps) => {
   const tooltip = busy ? "Aguarde a extração terminar" : "Voltar ao início";
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [aprendizado, setAprendizado] = useState(0);
+
+  useEffect(() => {
+    let ativo = true;
+    contarAprendizado()
+      .then((n) => ativo && setAprendizado(n))
+      .catch(() => undefined);
+    return () => {
+      ativo = false;
+    };
+  }, [location.pathname]);
 
   const handleClick = () => {
     if (busy) return;
+    if (location.pathname !== "/") {
+      navigate("/");
+      return;
+    }
     onGoHome?.();
   };
 
@@ -38,17 +58,36 @@ export const AppHeader = ({ onGoHome, busy = false, className }: AppHeaderProps)
           <Logo size={34} showWordmark />
         </button>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleClick}
-          disabled={busy}
-          title={tooltip}
-          className="gap-2"
-        >
-          <Home className="h-4 w-4" />
-          <span className="hidden sm:inline">Início</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate("/aprendizado")}
+            disabled={busy}
+            title="Aprendizado"
+            className="gap-2"
+          >
+            <GraduationCap className="h-4 w-4" />
+            <span className="hidden sm:inline">Aprendizado</span>
+            {aprendizado > 0 && (
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                {aprendizado}
+              </span>
+            )}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleClick}
+            disabled={busy}
+            title={tooltip}
+            className="gap-2"
+          >
+            <Home className="h-4 w-4" />
+            <span className="hidden sm:inline">Início</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

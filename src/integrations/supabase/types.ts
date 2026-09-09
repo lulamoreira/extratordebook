@@ -20,6 +20,7 @@ export type Database = {
           errors: Json
           file_name: string
           id: string
+          natura_rows: Json
           nickname: string
           piece_count: number
           pieces: Json
@@ -31,6 +32,7 @@ export type Database = {
           errors?: Json
           file_name?: string
           id?: string
+          natura_rows?: Json
           nickname?: string
           piece_count?: number
           pieces?: Json
@@ -42,6 +44,7 @@ export type Database = {
           errors?: Json
           file_name?: string
           id?: string
+          natura_rows?: Json
           nickname?: string
           piece_count?: number
           pieces?: Json
@@ -82,6 +85,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      spec_examples: {
+        Row: {
+          alvo: string
+          arquivo: string
+          chave: string
+          created_at: string
+          especificacao_correta: string
+          especificacao_ia: string | null
+          extraction_id: string | null
+          formato: string
+          grupo: string
+          id: string
+          item: string
+          nome: string
+          origem: string
+          pag_book: number | null
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alvo?: string
+          arquivo?: string
+          chave: string
+          created_at?: string
+          especificacao_correta: string
+          especificacao_ia?: string | null
+          extraction_id?: string | null
+          formato?: string
+          grupo?: string
+          id?: string
+          item?: string
+          nome?: string
+          origem?: string
+          pag_book?: number | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          alvo?: string
+          arquivo?: string
+          chave?: string
+          created_at?: string
+          especificacao_correta?: string
+          especificacao_ia?: string | null
+          extraction_id?: string | null
+          formato?: string
+          grupo?: string
+          id?: string
+          item?: string
+          nome?: string
+          origem?: string
+          pag_book?: number | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spec_examples_extraction_id_fkey"
+            columns: ["extraction_id"]
+            isOneToOne: false
+            referencedRelation: "extractions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

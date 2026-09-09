@@ -42,7 +42,7 @@ serve(async (req) => {
   }
 
   try {
-    const { pdfBase64, fileName } = await req.json();
+    const { pdfBase64, fileName, rules } = await req.json();
 
     if (!pdfBase64) {
       return new Response(
@@ -58,6 +58,15 @@ serve(async (req) => {
 
     console.log(`Processing PDF: ${fileName || "unknown"}, size: ${pdfBase64.length} chars`);
 
+    // Regras de leitura aprendidas com o cliente (alvo 'extracao'/'ambos').
+    const ruleList: string[] = Array.isArray(rules)
+      ? rules.map((r: unknown) => String(r ?? "").trim()).filter(Boolean)
+      : [];
+    const systemPrompt =
+      ruleList.length > 0
+        ? `${SYSTEM_PROMPT}\n\nREGRAS DE LEITURA DEFINIDAS PELO CLIENTE (siga à risca, elas descrevem o que ele considera essencial capturar deste tipo de book):\n${ruleList.join("\n")}`
+        : SYSTEM_PROMPT;
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -67,7 +76,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-pro",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [

@@ -1,12 +1,22 @@
 import { type Piece } from "@/data/extractedPieces";
 import { supabase } from "@/integrations/supabase/client";
 import { gerarPlanilhaNatura, type NaturaRow } from "@/lib/naturaSheet";
+import { saveNaturaRows } from "@/lib/historyStorage";
+import {
+  carregarAprendizado,
+  chaveDaPeca,
+  exemplosRelevantes,
+  type SpecExample,
+} from "@/lib/specLearning";
 import { toast } from "sonner";
 
 const BATCH_SIZE = 40;
 const MAX_PARALLEL = 2;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
+const MAX_EXAMPLES_PER_BATCH = 25;
+const MAX_RULES = 20;
+const EXAMPLE_SPEC_LIMIT = 300;
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -21,11 +31,16 @@ const fallbackRow = (p: Piece): NaturaRow => ({
   formato: (p.tamanho || "").replace(/cm/gi, "").trim(),
 });
 
-async function formatBatch(batch: Piece[]): Promise<NaturaRow[] | null> {
+interface AiPayload {
+  examples: { item: string; nome: string; grupo: string; formato: string; especificacao: string }[];
+  rules: string[];
+}
+
+async function formatBatch(batch: Piece[], learning: AiPayload): Promise<NaturaRow[] | null> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const { data, error } = await supabase.functions.invoke("format-natura", {
-        body: { pieces: batch },
+        body: { pieces: batch, examples: learning.examples, rules: learning.rules },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
@@ -79,53 +94,134 @@ function herdarGrupos(rows: NaturaRow[]): NaturaRow[] {
   });
 }
 
+/** Monta a linha diretamente da especificação já aprovada pelo cliente (reuso literal). */
+const rowFromExample = (p: Piece, ex: SpecExample): NaturaRow => ({
+  grupo: ex.grupo || "OUTROS",
+  nome: ex.nome || (p.secao || p.nomePeca || "").toUpperCase(),
+  item: p.nomePeca || ex.item,
+  arquivo: p.codigo || "",
+  especificacaoPadrao: ex.especificacaoCorreta,
+  pagBook: Number(p.pagina) || 0,
+  formato: (p.tamanho || "").replace(/cm/gi, "").trim(),
+});
+
 /**
  * Standardizes the pieces via AI (in batches) and downloads the official
  * Natura layout spreadsheet. Never aborts on partial failures.
  */
-
-export async function exportarPlanilhaNatura(pieces: Piece[], baseName: string): Promise<void> {
+export async function exportarPlanilhaNatura(
+  pieces: Piece[],
+  baseName: string,
+  extractionId?: string | null
+): Promise<void> {
   if (!pieces || pieces.length === 0) {
     toast.error("Nenhuma peça para exportar");
     return;
   }
 
-  toast.info("Padronizando especificações com IA...");
+  // 1. Aprendizado do usuário, carregado uma única vez.
+  let exemplos: SpecExample[] = [];
+  let regras: string[] = [];
+  try {
+    const aprendizado = await carregarAprendizado();
+    exemplos = aprendizado.exemplos;
+    regras = aprendizado.regras
+      .filter((r) => r.alvo === "redacao" || r.alvo === "ambos")
+      .slice(0, MAX_RULES)
+      .map((r) => r.especificacaoCorreta.trim())
+      .filter(Boolean);
+  } catch (err) {
+    console.warn("Não foi possível carregar o aprendizado — seguindo sem ele.", err);
+  }
 
-  const batches: Piece[][] = [];
-  for (let i = 0; i < pieces.length; i += BATCH_SIZE) {
-    batches.push(pieces.slice(i, i + BATCH_SIZE));
+  const porChave = new Map<string, SpecExample>();
+  for (const ex of exemplos) {
+    if (!porChave.has(ex.chave)) porChave.set(ex.chave, ex);
+  }
+
+  // 2. Reuso literal: peças já aprovadas pelo cliente não vão para a IA.
+  const finalRows: (NaturaRow | null)[] = new Array(pieces.length).fill(null);
+  const pendentes: { piece: Piece; index: number }[] = [];
+  let reusadas = 0;
+
+  pieces.forEach((p, index) => {
+    const ex = porChave.get(chaveDaPeca(p.nomePeca, p.tamanho));
+    if (ex) {
+      finalRows[index] = rowFromExample(p, ex);
+      reusadas++;
+    } else {
+      pendentes.push({ piece: p, index });
+    }
+  });
+
+  if (pendentes.length > 0) {
+    toast.info("Padronizando especificações com IA...");
+  }
+
+  // 3. Lotes para a IA, com exemplos relevantes e regras.
+  const batches: { piece: Piece; index: number }[][] = [];
+  for (let i = 0; i < pendentes.length; i += BATCH_SIZE) {
+    batches.push(pendentes.slice(i, i + BATCH_SIZE));
   }
 
   const results: (NaturaRow[] | null)[] = new Array(batches.length).fill(null);
 
   for (let i = 0; i < batches.length; i += MAX_PARALLEL) {
     const slice = batches.slice(i, i + MAX_PARALLEL);
-    const settled = await Promise.all(slice.map((b) => formatBatch(b)));
+    const settled = await Promise.all(
+      slice.map((b) => {
+        const termos = b.flatMap(({ piece }) => [piece.nomePeca, piece.secao]);
+        const relevantes = exemplosRelevantes(exemplos, termos, MAX_EXAMPLES_PER_BATCH);
+        return formatBatch(
+          b.map((e) => e.piece),
+          {
+            examples: relevantes.map((ex) => ({
+              item: ex.item,
+              nome: ex.nome,
+              grupo: ex.grupo,
+              formato: ex.formato,
+              especificacao: ex.especificacaoCorreta.slice(0, EXAMPLE_SPEC_LIMIT),
+            })),
+            rules: regras,
+          }
+        );
+      })
+    );
     settled.forEach((res, j) => {
       results[i + j] = res;
     });
   }
 
+  // 4. Junta tudo preservando a ordem original.
   let failedPieces = 0;
-  const rows: NaturaRow[] = [];
   results.forEach((res, i) => {
-    if (res) {
-      rows.push(...res);
-    } else {
-      failedPieces += batches[i].length;
-      rows.push(...batches[i].map(fallbackRow));
-    }
+    batches[i].forEach((entry, j) => {
+      finalRows[entry.index] = res ? res[j] ?? fallbackRow(entry.piece) : fallbackRow(entry.piece);
+    });
+    if (!res) failedPieces += batches[i].length;
   });
 
-  const titulo = (baseName || "EXTRAÇÃO").toUpperCase();
-  await gerarPlanilhaNatura(herdarGrupos(rows), titulo, titulo);
+  const rows = finalRows.map((r, i) => r ?? fallbackRow(pieces[i]));
+  const finalOrdered = herdarGrupos(rows);
 
+  const titulo = (baseName || "EXTRAÇÃO").toUpperCase();
+  await gerarPlanilhaNatura(finalOrdered, titulo, titulo);
+
+  // 5. Guarda o que foi gerado, para permitir aprendizado por comparação depois.
+  if (extractionId) {
+    try {
+      await saveNaturaRows(extractionId, finalOrdered);
+    } catch (err) {
+      console.warn("Não foi possível salvar as linhas geradas da planilha Natura:", err);
+    }
+  }
 
   if (failedPieces > 0) {
     toast.warning(
       `Planilha gerada, mas ${failedPieces} peça(s) ficaram sem padronização da IA (marcadas como OUTROS).`
     );
+  } else if (reusadas > 0) {
+    toast.success(`Planilha gerada — ${reusadas} peças preenchidas pelo seu aprendizado.`);
   } else {
     toast.success("Planilha padrão Natura gerada!");
   }

@@ -1,0 +1,1 @@
+ALTER TABLE public.extractions ADD COLUMN IF NOT EXISTS natura_rows jsonb NOT NULL DEFAULT '[]'::jsonb;

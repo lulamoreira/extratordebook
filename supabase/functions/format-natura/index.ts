@@ -64,7 +64,7 @@ serve(async (req) => {
   }
 
   try {
-    const { pieces } = await req.json();
+    const { pieces, examples, rules } = await req.json();
 
     if (!Array.isArray(pieces) || pieces.length === 0) {
       return new Response(JSON.stringify({ error: "pieces is required" }), {
@@ -80,6 +80,37 @@ serve(async (req) => {
 
     console.log(`Formatting ${pieces.length} pieces`);
 
+    // Aprendizado do cliente: regras e especificações aprovadas têm prioridade máxima.
+    const ruleList: string[] = Array.isArray(rules)
+      ? rules.map((r: unknown) => String(r ?? "").trim()).filter(Boolean)
+      : [];
+    const exampleList: Record<string, unknown>[] = Array.isArray(examples) ? examples : [];
+
+    let learningBlock = "";
+    if (ruleList.length > 0) {
+      learningBlock += `REGRAS DE REDAÇÃO DEFINIDAS PELO CLIENTE (prioridade máxima):\n${ruleList.join("\n")}\n\n`;
+    }
+    if (exampleList.length > 0) {
+      const lines = exampleList
+        .map((e) => {
+          const item = String(e.item ?? "").trim();
+          const nome = String(e.nome ?? "").trim();
+          const formato = String(e.formato ?? "").trim();
+          const espec = String(e.especificacao ?? "").trim();
+          if (!espec) return "";
+          return `${item} | ${nome} | ${formato} -> ${espec}`;
+        })
+        .filter(Boolean);
+      if (lines.length > 0) {
+        learningBlock +=
+          "ESPECIFICAÇÕES APROVADAS PELO CLIENTE (padrão obrigatório).\n" +
+          "Estas frases foram escritas ou corrigidas pelo próprio cliente e têm prioridade sobre qualquer regra genérica.\n" +
+          "Imite fielmente o vocabulário, a ordem das informações, a pontuação e o nível de detalhe.\n" +
+          "Se uma peça nova for equivalente a alguma da lista, repita a mesma frase ajustando apenas o que for de fato diferente (medida, cor, acabamento).\n" +
+          `${lines.join("\n")}\n\n`;
+      }
+    }
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -92,7 +123,7 @@ serve(async (req) => {
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
-            content: `Padronize estas ${pieces.length} peças (uma linha de saída por peça, mesma ordem):\n\n${JSON.stringify(pieces)}`,
+            content: `${learningBlock}Padronize estas ${pieces.length} peças (uma linha de saída por peça, mesma ordem):\n\n${JSON.stringify(pieces)}`,
           },
         ],
         tools: [

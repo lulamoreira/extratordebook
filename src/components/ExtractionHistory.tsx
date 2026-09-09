@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   Sparkles,
   Loader2,
+  GraduationCap,
 } from "lucide-react";
+import TeachDialog from "@/components/TeachDialog";
 import { toast } from "sonner";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 import { format } from "date-fns";
@@ -42,6 +44,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [nicknameInput, setNicknameInput] = useState("");
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [teachId, setTeachId] = useState<string | null>(null);
 
   const reload = useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsLoading(true);
@@ -79,7 +82,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      await exportarPlanilhaNatura(pieces, entryLabel(entry));
+      await exportarPlanilhaNatura(pieces, entryLabel(entry), entry.id);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível gerar a planilha padrão Natura.");
@@ -253,6 +256,15 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                         <Sparkles className="h-3.5 w-3.5 text-primary" />
                       )}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setTeachId(entry.id)}
+                      title="Ensinar com minha planilha"
+                    >
+                      <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -284,6 +296,12 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
           ))
         )}
       </CardContent>
+
+      <TeachDialog
+        open={teachId !== null}
+        onOpenChange={(open) => !open && setTeachId(null)}
+        extractionId={teachId}
+      />
     </Card>
   );
 };
