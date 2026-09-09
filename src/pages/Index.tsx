@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
 import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
 
@@ -17,7 +17,15 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2 } from "lucide-react";
-import { NaturaMark } from "@/components/NaturaMark";
+import ClienteMark from "@/components/ClienteMark";
+import {
+  CLIENTE_PADRAO,
+  LISTA_CLIENTES,
+  getCliente,
+  lerClienteSalvo,
+  salvarClienteSelecionado,
+  type ClienteId,
+} from "@/lib/clientes";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
@@ -27,6 +35,8 @@ import { bytesToBase64 } from "@/lib/base64";
 import { carregarRegras } from "@/lib/specLearning";
 import TeachDialog from "@/components/TeachDialog";
 import { GraduationCap } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 
 const MAX_PAGES_PER_PART = 10;
 const MAX_RETRIES = 2;
