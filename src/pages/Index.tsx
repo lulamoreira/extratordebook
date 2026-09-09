@@ -193,6 +193,9 @@ const Index = () => {
       const fileStatuses = parts.map((p) => ({ name: p.name, status: "pending" as const }));
       setProcessingFiles(fileStatuses);
 
+      // Regras de leitura aprendidas com o usuário (alvo 'extracao'/'ambos').
+      const extractionRules = await carregarRegras("extracao");
+
       let allPieces: Piece[] = [];
       let successCount = 0;
       let partErrors: PartError[] = [];
@@ -206,7 +209,7 @@ const Index = () => {
         setProgress(Math.round(10 + ((i) / parts.length) * 70));
 
         try {
-          const extracted = await processOnePart(parts[i]);
+          const extracted = await processOnePart(parts[i], extractionRules);
           allPieces = [...allPieces, ...extracted];
           successCount += extracted.length;
           setProcessingFiles((prev) =>
@@ -241,7 +244,7 @@ const Index = () => {
             setProgress(Math.round(80 + ((retry + 1) / MAX_RETRIES) * 15));
 
             try {
-              const extracted = await processOnePart(parts[index]);
+              const extracted = await processOnePart(parts[index], extractionRules);
               allPieces = [...allPieces, ...extracted];
               successCount += extracted.length;
               setProcessingFiles((prev) =>
