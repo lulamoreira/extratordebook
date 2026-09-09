@@ -167,6 +167,56 @@ const Index = () => {
     setIsExtracting(true);
     setProgress(2);
 
+    // Fluxo paralelo da Rommanel — partes em série, para não perder a seção.
+    if (cliente === "rommanel") {
+      try {
+        toast.info("Dividindo PDF em partes de até 10 páginas...");
+        const { pieces: linhas, errors } = await extrairBookRommanel(file, (p) => {
+          setProgress(p.progress);
+          setProcessingFiles(p.partes);
+        });
+        setPieces([]);
+        setRommanelPieces(linhas);
+
+        if (errors.length > 0) {
+          toast.error(
+            `${errors.length} trecho(s) falharam — as peças desses trechos podem ter ficado sem Local de instalação.`,
+            { duration: 12000 }
+          );
+        }
+
+        if (linhas.length > 0 || errors.length > 0) {
+          try {
+            const entry = await saveToHistory(
+              file.name,
+              linhas as unknown as Piece[],
+              errors,
+              "rommanel"
+            );
+            setCurrentEntryId(entry.id);
+            setHistoryRefreshKey((prev) => prev + 1);
+            if (linhas.length > 0) {
+              toast.success(`${linhas.length} linhas extraídas e salvas na nuvem!`);
+            }
+          } catch (saveErr) {
+            console.error("Erro ao salvar histórico:", saveErr);
+            setCurrentEntryId(null);
+            toast.error("Não foi possível salvar no histórico — as linhas seguem na tela.", {
+              duration: 15000,
+            });
+          }
+        }
+      } catch (err) {
+        toast.error(
+          `Erro ao extrair o book da Rommanel: ${err instanceof Error ? err.message : "erro desconhecido"}`
+        );
+      } finally {
+        setIsExtracting(false);
+        setTimeout(() => setProcessingFiles([]), 3000);
+      }
+      return;
+    }
+
     try {
       toast.info("Dividindo PDF em partes de até 10 páginas...");
       const { parts, totalPages } = await splitPdf(file);
