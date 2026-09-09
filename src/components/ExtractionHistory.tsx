@@ -23,7 +23,9 @@ import {
   AlertTriangle,
   Sparkles,
   Loader2,
+  GraduationCap,
 } from "lucide-react";
+import TeachDialog from "@/components/TeachDialog";
 import { toast } from "sonner";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 import { format } from "date-fns";
