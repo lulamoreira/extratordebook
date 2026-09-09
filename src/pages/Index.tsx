@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, AlertTriangle, Save, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2 } from "lucide-react";
 import { NaturaMark } from "@/components/NaturaMark";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -446,17 +445,6 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Warning */}
-        <Alert className="mb-6 border-none bg-warning/10 shadow-soft">
-          <AlertTriangle className="h-5 w-5 text-warning" />
-          <AlertTitle className="text-base font-bold text-foreground">
-            Divisão automática em partes de até 10 páginas
-          </AlertTitle>
-          <AlertDescription className="text-muted-foreground">
-            Envie um único PDF do book completo. O sistema irá <strong>dividir automaticamente</strong> em partes de até 10 páginas
-            e processar cada parte separadamente, consolidando todas as peças em uma única tabela.
-          </AlertDescription>
-        </Alert>
 
 
         {/* History */}
@@ -488,6 +476,11 @@ const Index = () => {
                     : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
                   }
                 </p>
+                {!isDragging && (
+                  <p className="text-xs text-muted-foreground">
+                    PDFs longos são divididos automaticamente em partes de até 10 páginas.
+                  </p>
+                )}
               </div>
               {!isDragging && (
                 <label>
