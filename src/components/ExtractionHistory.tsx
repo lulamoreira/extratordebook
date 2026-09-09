@@ -226,7 +226,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                 )}
 
                 {editingId !== entry.id && (
-                  <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="flex gap-0.5">
                     {entry.errors && entry.errors.length > 0 && (
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleErrors(entry.id)} title="Ver relatório de erros">
                         <AlertTriangle className="h-3.5 w-3.5 text-warning" />
@@ -258,12 +258,13 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
+                      size="sm"
+                      className="h-7 gap-1 px-2"
                       onClick={() => setTeachId(entry.id)}
                       title="Ensinar com minha planilha"
                     >
                       <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                      <span className="hidden text-xs font-semibold sm:inline">Ensinar</span>
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startRename(entry)} title="Renomear">
                       <Pencil className="h-3.5 w-3.5" />
@@ -301,6 +302,15 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
         open={teachId !== null}
         onOpenChange={(open) => !open && setTeachId(null)}
         extractionId={teachId}
+        onGenerateNatura={
+          teachId
+            ? async () => {
+                const entry = history.find((e) => e.id === teachId);
+                if (!entry) throw new Error("Extração não encontrada.");
+                await generateNatura(entry);
+              }
+            : undefined
+        }
       />
     </Card>
   );
