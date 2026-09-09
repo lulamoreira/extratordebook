@@ -410,8 +410,14 @@ export async function contarNovidades(
 }
 
 
+/** Filtro de leitura: um cliente específico ou todos. */
+export type FiltroCliente = ClienteId | "todos";
+
 /** Listagem paginada — nunca um select solto (trunca em 1000 silenciosamente). */
-export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
+export async function listarExemplos(
+  cliente: FiltroCliente,
+  tipo?: Tipo
+): Promise<SpecExample[]> {
   const out: SpecExample[] = [];
   let from = 0;
 
@@ -421,6 +427,7 @@ export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
       .select("*", { count: "exact" })
       .order("updated_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
+    if (cliente !== "todos") query = query.eq("cliente", cliente);
     if (tipo) query = query.eq("tipo", tipo);
 
     const { data, error, count } = await query;
@@ -436,10 +443,10 @@ export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
   return out;
 }
 
-export async function contarAprendizado(): Promise<number> {
-  const { count, error } = await supabase
-    .from("spec_examples")
-    .select("id", { count: "exact", head: true });
+export async function contarAprendizado(cliente: FiltroCliente = "todos"): Promise<number> {
+  let query = supabase.from("spec_examples").select("id", { count: "exact", head: true });
+  if (cliente !== "todos") query = query.eq("cliente", cliente);
+  const { count, error } = await query;
   if (error) return 0;
   return count ?? 0;
 }
@@ -449,9 +456,13 @@ export async function excluirExemplo(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export async function excluirTodosExemplos(tipo?: Tipo): Promise<void> {
+export async function excluirTodosExemplos(
+  cliente: FiltroCliente,
+  tipo?: Tipo
+): Promise<void> {
   let query = supabase.from("spec_examples").delete();
   query = tipo ? query.eq("tipo", tipo) : query.not("id", "is", null);
+  if (cliente !== "todos") query = query.eq("cliente", cliente);
   const { error } = await query;
   if (error) throw new Error(error.message);
 }
@@ -465,8 +476,8 @@ export interface Aprendizado {
   regras: SpecExample[];
 }
 
-export async function carregarAprendizado(): Promise<Aprendizado> {
-  const todos = await listarExemplos();
+export async function carregarAprendizado(cliente: ClienteId): Promise<Aprendizado> {
+  const todos = await listarExemplos(cliente);
   return {
     exemplos: todos.filter((e) => e.tipo === "exemplo"),
     regras: todos.filter((e) => e.tipo === "regra"),
@@ -474,14 +485,19 @@ export async function carregarAprendizado(): Promise<Aprendizado> {
 }
 
 /** Regras (texto) filtradas pelo alvo, mais recentes primeiro. */
-export async function carregarRegras(alvo: "extracao" | "redacao", limite = 20): Promise<string[]> {
+export async function carregarRegras(
+  cliente: ClienteId,
+  alvo: "extracao" | "redacao",
+  limite = 20
+): Promise<string[]> {
   try {
-    const regras = await listarExemplos("regra");
+    const regras = await listarExemplos(cliente, "regra");
     return regras
       .filter((r) => r.alvo === alvo || r.alvo === "ambos")
       .slice(0, limite)
       .map((r) => r.especificacaoCorreta.trim())
       .filter(Boolean);
+
   } catch (err) {
     console.warn("Não foi possível carregar as regras de aprendizado:", err);
     return [];
