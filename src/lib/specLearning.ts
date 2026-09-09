@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { supabase } from "@/integrations/supabase/client";
-import type { ClienteId } from "@/lib/clientes";
+import { normalizarClienteId, type ClienteId } from "@/lib/clientes";
 import type { NaturaRow } from "@/lib/naturaSheet";
 
 
@@ -70,6 +70,7 @@ export interface AprendizadoItem {
 export interface SpecExample extends AprendizadoItem {
   id: string;
   updatedAt: string;
+  cliente: ClienteId;
 }
 
 export interface ResultadoGravacao {
@@ -303,6 +304,7 @@ const toExample = (row: Record<string, unknown>): SpecExample => ({
   especificacaoCorreta: String(row.especificacao_correta ?? ""),
   origem: (row.origem as Origem) ?? "gabarito",
   updatedAt: String(row.updated_at ?? new Date().toISOString()),
+  cliente: normalizarClienteId(row.cliente),
 });
 
 /** Upsert com precedência: book > planilha > gabarito; entre iguais, o novo vence. */
