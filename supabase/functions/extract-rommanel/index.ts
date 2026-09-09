@@ -19,25 +19,30 @@ PÁGINAS DE CAPA DE SEÇÃO:
 Algumas páginas contêm apenas um título grande e nada mais (ex: "TODAS AS LOJAS", "VITRINE", "REVESTIMENTOS", "AQUÁRIO", "ARMÁRIO", "QUIOSQUE", "CARTAZETE"). Elas NÃO são peças: elas definem o localInstalacao de todas as páginas seguintes, até a próxima capa. Nunca gere uma peça a partir de uma capa. Também ignore a capa geral do book e a contracapa final.
 
 KITS E PLANIFICAÇÕES (o ponto mais importante):
-Uma única página pode gerar VÁRIAS linhas.
-- Quando a página mostra uma planificação com vários recortes cotados separadamente, gere uma linha por recorte, nomeando pela posição. Exemplo real deste book: a página do REVESTIMENTO TOPO MESA P mostra 5 recortes (uma barra em cima 60x15, uma barra à esquerda 15x40, um retângulo central 60x40, uma barra à direita 15x40, uma barra embaixo 60x15) e vira exatamente estas 5 linhas, todas com kit "REVESTIMENTO TOPO MESA P":
-    REVESTIMENTO SUPERIOR P — 60X15
-    REVESTIMENTO LATERAL ESQUERDA P — 15X40
-    REVESTIMENTO LATERAL DIREITA P — 15X40
-    REVESTIMENTO INFERIOR P — 60X15
-    REVESTIMENTO TOPO P — 60X40
-- Quando a página mostra um conjunto de peças distintas (ex: 3 cubos de tamanhos diferentes; uma placa mais duas letras caixa), gere uma linha por peça, com o mesmo kit.
-- Em TODO kit, apenas a PRIMEIRA linha recebe unidadeCompra=true e nomeColunaVarejo preenchido. As demais recebem unidadeCompra=false e nomeColunaVarejo vazio. A especificação completa também vai só na primeira linha; as filhas ficam com especificacao vazia.
-- Peça avulsa (uma página, uma peça) recebe unidadeCompra=true.
 
-EXCEÇÃO — KITS DE BANNER (convenção obrigatória deste cliente, convive com as regras acima):
-Kits formados por um PAINEL mais seus APLIQUES NÃO expandem em várias linhas. Eles ocupam UMA ÚNICA linha, com as peças empilhadas dentro do mesmo campo, separadas por quebra de linha (\n), na ordem painel primeiro e apliques depois:
-- nomePeca recebe os nomes empilhados. Ex: "PAINEL PRIMÁRIO\nAPLIQUE COLEÇÃO\nAPLIQUE ANA CASTELA"
-- pagina, nesse caso, é a página do PAINEL; e o campo tamanho recebe os tamanhos empilhados na mesma ordem dos nomes. Ex: "70X100\n29x11\n21x8"
-- O campo paginas (string) recebe as páginas empilhadas na mesma ordem, sempre relativas a este arquivo enviado, começando em 1. Ex: "17\n19\n20". Quando todas as peças estiverem na mesma página, paginas recebe só um número.
-- A linha inteira é uma única unidade de compra: unidadeCompra=true, com nomeColunaVarejo como "KIT BANNER PRIMÁRIO", "KIT BANNER SECUNDÁRIO", "KIT BANNER AQUÁRIO PRIMÁRIO" ou "KIT BANNER AQUÁRIO SECUNDÁRIO".
-- A especificação usa o formato de duas linhas rotuladas PAINEL: / APLIQUES: descrito na seção ESPECIFICAÇÃO.
-Isto vale SOMENTE para painel + apliques. Todos os outros kits continuam expandindo em uma linha por peça, como já está escrito: cubos viram 3 linhas, a placa do espaço vira 3 linhas, e as planificações de revestimento viram 5 linhas.
+REGRA PADRÃO — EXPANDIR (vale para praticamente todos os kits):
+
+Um kit gera UMA LINHA POR PEÇA. Isto é o comportamento padrão e deve ser seguido sempre que a exceção abaixo não se aplicar.
+
+- Planificação de revestimento: cada recorte cotado separadamente vira uma linha, nomeada pela posição. Uma planificação com 5 recortes gera 5 linhas — nunca 1. Ex: REVESTIMENTO SUPERIOR P (60X15), REVESTIMENTO LATERAL ESQUERDA P (15X40), REVESTIMENTO LATERAL DIREITA P (15X40), REVESTIMENTO INFERIOR P (60X15), REVESTIMENTO TOPO P (60X40).
+- Revestimento de armário: gera 4 linhas (superior, esquerdo, direito, inferior).
+- Conjunto de peças de tamanhos diferentes da mesma família (cubos P, M e G): uma linha por tamanho.
+- Placa com letras caixa: uma linha para a placa e uma para cada letra caixa.
+- Display com pancarta e adesivo: uma linha para cada.
+
+Em todos esses casos, só a PRIMEIRA linha do kit recebe unidadeCompra=true, nomeColunaVarejo e a especificação completa. As demais ficam com unidadeCompra=false, nomeColunaVarejo vazio e especificacao vazia.
+
+EXCEÇÃO ÚNICA — EMPILHAR (uma linha só):
+
+Aplica-se EXCLUSIVAMENTE a kits formados por um PAINEL DE BANNER mais os seus APLIQUES. Nenhum outro caso.
+
+Nesses kits, nomePeca, paginas e tamanho recebem os valores empilhados por quebra de linha, na ordem painel primeiro e apliques depois, e a linha inteira é uma única unidade de compra.
+
+Se o kit não tiver um painel de banner com apliques, a exceção NÃO se aplica — use a regra padrão de expandir.
+
+VERIFICAÇÃO OBRIGATÓRIA antes de responder:
+
+Percorra as páginas desta parte e confirme, uma a uma: toda página que mostra uma planificação com N recortes cotados gerou N linhas? Todo conjunto com N peças distintas gerou N linhas? Se alguma gerou menos, corrija antes de responder. Colapsar um kit que não seja painel+apliques é erro.
 
 nomeColunaVarejo: nome CURTO e em MAIÚSCULAS que identifica a unidade de compra na planilha de lojas. Exemplos reais deste cliente: "PANCARTA CURADORIA", "KIT PANCARTA FOTO", "ADESIVO QR CODE", "MÓBILE", "EXPOSITOR FERRADURA", "KIT CUBOS", "ADESIVO PISO", "KIT PLACA ESPAÇO AC", "CHAPÉU", "KIT BANNER PRIMÁRIO", "REVESTIMENTO P", "TOPO DE MESA P", "TOPO DE MESA P LOGO", "BACKLIGHT GG", "CARTAZETE".
 
