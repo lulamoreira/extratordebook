@@ -805,6 +805,68 @@ const Index = () => {
             </div>
           </>
         )}
+
+        {/* Resultado Rommanel — somente leitura nesta fase */}
+        {rommanelPieces.length > 0 && (
+          <>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {fileName && <span className="text-muted-foreground">{fileName} — </span>}
+                  {rommanelPieces.length} linhas de peça ·{" "}
+                  {contarUnidadesCompra(rommanelPieces)} unidades de compra (colunas da VAREJO)
+                </p>
+              </div>
+              <Button
+                disabled
+                className="gap-2"
+                size="sm"
+                variant="secondary"
+                title="A planilha da Rommanel entra em uma próxima etapa."
+              >
+                <ClienteMark cliente="rommanel" size={44} />
+                Gerar Planilha Padrão Rommanel
+              </Button>
+            </div>
+
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">Página</TableHead>
+                    <TableHead>Local de instalação</TableHead>
+                    <TableHead>Kit</TableHead>
+                    <TableHead>Nome da Peça</TableHead>
+                    <TableHead>Tamanho</TableHead>
+                    <TableHead>Especificação</TableHead>
+                    <TableHead className="w-12">Cores</TableHead>
+                    <TableHead>Coluna VAREJO</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rommanelPieces.map((p, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{p.pagina}</TableCell>
+                      <TableCell className="text-xs font-semibold">{p.localInstalacao}</TableCell>
+                      <TableCell className="text-xs">{p.kit || "—"}</TableCell>
+                      <TableCell className={cn(!p.unidadeCompra && p.kit && "pl-8 text-muted-foreground")}>
+                        {p.nomePeca}
+                      </TableCell>
+                      <TableCell>{p.tamanho}</TableCell>
+                      <TableCell className="max-w-sm whitespace-pre-line text-sm">
+                        {p.especificacao || "—"}
+                      </TableCell>
+                      <TableCell className="font-medium">{p.cores}</TableCell>
+                      <TableCell className="text-xs font-semibold">
+                        {p.unidadeCompra ? p.nomeColunaVarejo : ""}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </div>
 
       <TeachDialog
