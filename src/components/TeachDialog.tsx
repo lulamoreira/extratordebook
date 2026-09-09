@@ -37,6 +37,8 @@ export interface TeachDialogProps {
   extractionId?: string | null;
   /** Só permite o modo gabarito (usado na página de aprendizado). */
   somenteGabarito?: boolean;
+  /** Gera a Planilha Padrão Natura da extração vinculada (mesma ação do histórico). */
+  onGenerateNatura?: () => Promise<void>;
   onLearned?: () => void;
 }
 
