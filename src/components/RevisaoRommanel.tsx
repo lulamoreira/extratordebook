@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import ClienteMark from "@/components/ClienteMark";
 import RommanelRevisaoRow from "@/components/RommanelRevisaoRow";
+import GerarRommanelDialog from "@/components/GerarRommanelDialog";
 import { updateHistoryPieces } from "@/lib/historyStorage";
 import type { Piece } from "@/data/extractedPieces";
 import {
@@ -63,6 +64,7 @@ export const RevisaoRommanel = ({
   const [salvando, setSalvando] = useState(false);
   const [sujo, setSujo] = useState(false);
   const [destaque, setDestaque] = useState<number | null>(null);
+  const [gerarAberto, setGerarAberto] = useState(false);
 
   // Marca RECORRENTE/NOVA e aplica a especificação já aprovada pelo usuário.
   useEffect(() => {
@@ -199,6 +201,12 @@ export const RevisaoRommanel = ({
 
   return (
     <div className="pb-24">
+      <GerarRommanelDialog
+        open={gerarAberto}
+        onOpenChange={setGerarAberto}
+        pieces={linhas}
+        fileName={fileName}
+      />
       <datalist id="rommanel-locais">
         {locais.map((l) => (
           <option key={l} value={l} />
@@ -223,11 +231,11 @@ export const RevisaoRommanel = ({
             Salvar revisão
           </Button>
           <Button
-            disabled
             className="gap-2"
             size="sm"
             variant="secondary"
-            title="A planilha da Rommanel entra na próxima etapa. Revise as peças enquanto isso."
+            onClick={() => setGerarAberto(true)}
+            title="Gera a pasta Excel a partir da campanha anterior"
           >
             <ClienteMark cliente="rommanel" size={44} />
             Gerar Planilha Padrão Rommanel
