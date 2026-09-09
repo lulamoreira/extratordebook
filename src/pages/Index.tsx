@@ -3,7 +3,9 @@ import { classificarTipo, type Piece } from "@/data/extractedPieces";
 import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
-import { PDFDocument } from "pdf-lib";
+import { splitPdf, type PdfPart } from "@/lib/pdfSplit";
+import { contarUnidadesCompra, type RommanelPiece } from "@/data/rommanelPieces";
+import { extrairBookRommanel } from "@/lib/rommanelExtract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,14 +33,14 @@ import { toast } from "sonner";
 import ExtractionHistory from "@/components/ExtractionHistory";
 import AppHeader from "@/components/AppHeader";
 import { exportarPlanilhaNatura } from "@/lib/naturaExport";
-import { bytesToBase64 } from "@/lib/base64";
+
 import { carregarRegras } from "@/lib/specLearning";
 import TeachDialog from "@/components/TeachDialog";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 
-const MAX_PAGES_PER_PART = 10;
+
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
 
@@ -60,19 +62,6 @@ const getErrorDiagnosis = (errorMsg: string): string => {
 };
 
 
-interface PdfPart {
-  name: string;
-  base64: string;
-  /** 1-based number of this part's first page within the full book. */
-  startPage: number;
-  /** Number of pages contained in this part. */
-  pageCount: number;
-}
-
-interface SplitResult {
-  parts: PdfPart[];
-  totalPages: number;
-}
 
 /** Sorts by page ascending, then codigo, and drops exact duplicates (codigo+pagina+tamanho). */
 const normalizePieces = (input: Piece[]): Piece[] => {
@@ -104,6 +93,7 @@ const Index = () => {
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
   const [teachOpen, setTeachOpen] = useState(false);
   const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
+  const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
 
   // Reabre no último cliente usado.
   useEffect(() => {
@@ -128,44 +118,6 @@ const Index = () => {
     }
   };
 
-  const splitPdf = async (file: File): Promise<SplitResult> => {
-    const buffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(buffer);
-    const totalPages = pdfDoc.getPageCount();
-    const baseName = file.name.replace(/\.pdf$/i, "");
-    const parts: PdfPart[] = [];
-
-    if (totalPages <= MAX_PAGES_PER_PART) {
-      parts.push({
-        name: file.name,
-        base64: bytesToBase64(new Uint8Array(buffer)),
-        startPage: 1,
-        pageCount: totalPages,
-      });
-      return { parts, totalPages };
-    }
-
-    const totalParts = Math.ceil(totalPages / MAX_PAGES_PER_PART);
-    for (let partIdx = 0; partIdx < totalParts; partIdx++) {
-      const firstIdx = partIdx * MAX_PAGES_PER_PART;
-      const endIdx = Math.min(firstIdx + MAX_PAGES_PER_PART, totalPages);
-      const newDoc = await PDFDocument.create();
-      const copiedPages = await newDoc.copyPages(
-        pdfDoc,
-        Array.from({ length: endIdx - firstIdx }, (_, i) => firstIdx + i)
-      );
-      copiedPages.forEach((page) => newDoc.addPage(page));
-      const pdfBytes = await newDoc.save({ useObjectStreams: true });
-      parts.push({
-        name: `${baseName}_parte${partIdx + 1}.pdf`,
-        base64: bytesToBase64(new Uint8Array(pdfBytes)),
-        startPage: firstIdx + 1,
-        pageCount: endIdx - firstIdx,
-      });
-    }
-
-    return { parts, totalPages };
-  };
 
   const processOnePart = async (part: PdfPart, rules: string[] = []): Promise<Piece[]> => {
     const { data, error } = await supabase.functions.invoke("extract-pdf", {
@@ -214,6 +166,56 @@ const Index = () => {
     setFileName(file.name);
     setIsExtracting(true);
     setProgress(2);
+
+    // Fluxo paralelo da Rommanel — partes em série, para não perder a seção.
+    if (cliente === "rommanel") {
+      try {
+        toast.info("Dividindo PDF em partes de até 10 páginas...");
+        const { pieces: linhas, errors } = await extrairBookRommanel(file, (p) => {
+          setProgress(p.progress);
+          setProcessingFiles(p.partes);
+        });
+        setPieces([]);
+        setRommanelPieces(linhas);
+
+        if (errors.length > 0) {
+          toast.error(
+            `${errors.length} trecho(s) falharam — as peças desses trechos podem ter ficado sem Local de instalação.`,
+            { duration: 12000 }
+          );
+        }
+
+        if (linhas.length > 0 || errors.length > 0) {
+          try {
+            const entry = await saveToHistory(
+              file.name,
+              linhas as unknown as Piece[],
+              errors,
+              "rommanel"
+            );
+            setCurrentEntryId(entry.id);
+            setHistoryRefreshKey((prev) => prev + 1);
+            if (linhas.length > 0) {
+              toast.success(`${linhas.length} linhas extraídas e salvas na nuvem!`);
+            }
+          } catch (saveErr) {
+            console.error("Erro ao salvar histórico:", saveErr);
+            setCurrentEntryId(null);
+            toast.error("Não foi possível salvar no histórico — as linhas seguem na tela.", {
+              duration: 15000,
+            });
+          }
+        }
+      } catch (err) {
+        toast.error(
+          `Erro ao extrair o book da Rommanel: ${err instanceof Error ? err.message : "erro desconhecido"}`
+        );
+      } finally {
+        setIsExtracting(false);
+        setTimeout(() => setProcessingFiles([]), 3000);
+      }
+      return;
+    }
 
     try {
       toast.info("Dividindo PDF em partes de até 10 páginas...");
@@ -425,7 +427,14 @@ const Index = () => {
     entryId: string,
     entryCliente: ClienteId
   ) => {
-    setPieces(normalizePieces(loaded));
+    if (entryCliente === "rommanel") {
+      // Extração da Rommanel — tabela própria, somente leitura.
+      setPieces([]);
+      setRommanelPieces(loaded as unknown as RommanelPiece[]);
+    } else {
+      setRommanelPieces([]);
+      setPieces(normalizePieces(loaded));
+    }
     setFileName(loadedName);
     setCurrentEntryId(entryId);
     // A tabela na tela passa a ser do cliente daquela extração.
@@ -450,6 +459,7 @@ const Index = () => {
 
   const handleGoHome = () => {
     setPieces([]);
+    setRommanelPieces([]);
     setFileName("");
     setEditingRow(null);
     setEditData(null);
@@ -509,7 +519,7 @@ const Index = () => {
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Upload Area */}
-        {pieces.length === 0 && !isExtracting && (
+        {pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
           <Card 
             className={`mb-8 border-dashed border-2 transition-colors ${
               isDragging && extracaoLiberada
@@ -788,6 +798,68 @@ const Index = () => {
                           </TableCell>
                         </>
                       )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+
+        {/* Resultado Rommanel — somente leitura nesta fase */}
+        {rommanelPieces.length > 0 && (
+          <>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {fileName && <span className="text-muted-foreground">{fileName} — </span>}
+                  {rommanelPieces.length} linhas de peça ·{" "}
+                  {contarUnidadesCompra(rommanelPieces)} unidades de compra (colunas da VAREJO)
+                </p>
+              </div>
+              <Button
+                disabled
+                className="gap-2"
+                size="sm"
+                variant="secondary"
+                title="A planilha da Rommanel entra em uma próxima etapa."
+              >
+                <ClienteMark cliente="rommanel" size={44} />
+                Gerar Planilha Padrão Rommanel
+              </Button>
+            </div>
+
+            <div className="rounded-lg border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">Página</TableHead>
+                    <TableHead>Local de instalação</TableHead>
+                    <TableHead>Kit</TableHead>
+                    <TableHead>Nome da Peça</TableHead>
+                    <TableHead>Tamanho</TableHead>
+                    <TableHead>Especificação</TableHead>
+                    <TableHead className="w-12">Cores</TableHead>
+                    <TableHead>Coluna VAREJO</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rommanelPieces.map((p, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{p.pagina}</TableCell>
+                      <TableCell className="text-xs font-semibold">{p.localInstalacao}</TableCell>
+                      <TableCell className="text-xs">{p.kit || "—"}</TableCell>
+                      <TableCell className={cn(!p.unidadeCompra && p.kit && "pl-8 text-muted-foreground")}>
+                        {p.nomePeca}
+                      </TableCell>
+                      <TableCell>{p.tamanho}</TableCell>
+                      <TableCell className="max-w-sm whitespace-pre-line text-sm">
+                        {p.especificacao || "—"}
+                      </TableCell>
+                      <TableCell className="font-medium">{p.cores}</TableCell>
+                      <TableCell className="text-xs font-semibold">
+                        {p.unidadeCompra ? p.nomeColunaVarejo : ""}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
