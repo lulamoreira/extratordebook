@@ -202,21 +202,30 @@ export const TeachDialog = ({
 
         {etapa === "modo" && (
           <div className="space-y-4">
+            {!somenteGabarito && !temGerado && naturaRows !== null && (
+              <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                As extrações feitas antes desta atualização ainda não têm a versão gerada salva —
+                gere a planilha uma vez para liberar a comparação.
+              </p>
+            )}
             {!somenteGabarito && (
               <div className="space-y-2">
                 {MODOS.map((m) => {
                   const desabilitado = m.id === "planilha" && !temGerado;
                   return (
-                    <button
+                    <div
                       key={m.id}
-                      type="button"
-                      disabled={desabilitado}
-                      onClick={() => setModo(m.id)}
                       className={cn(
                         "w-full rounded-xl p-3 text-left transition-colors",
-                        modo === m.id ? "bg-primary/10 ring-2 ring-primary" : "bg-muted/50 hover:bg-muted",
-                        desabilitado && "cursor-not-allowed opacity-50"
+                        modo === m.id && !desabilitado
+                          ? "bg-primary/10 ring-2 ring-primary"
+                          : "bg-muted/50",
+                        desabilitado ? "opacity-60" : "cursor-pointer hover:bg-muted"
                       )}
+                      role="button"
+                      tabIndex={desabilitado ? -1 : 0}
+                      onClick={() => !desabilitado && setModo(m.id)}
+                      onKeyDown={(e) => e.key === "Enter" && !desabilitado && setModo(m.id)}
                     >
                       <span className="block text-sm font-semibold text-foreground">{m.titulo}</span>
                       <span className="block text-xs text-muted-foreground">
@@ -224,7 +233,28 @@ export const TeachDialog = ({
                           ? "Indisponível: gere a Planilha Padrão Natura desta extração primeiro."
                           : m.descricao}
                       </span>
-                    </button>
+                      {desabilitado && onGenerateNatura && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2"
+                          disabled={gerandoNatura}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            gerarNatura();
+                          }}
+                        >
+                          {gerandoNatura ? (
+                            <>
+                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                              Gerando...
+                            </>
+                          ) : (
+                            "Gerar agora a planilha desta extração"
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
