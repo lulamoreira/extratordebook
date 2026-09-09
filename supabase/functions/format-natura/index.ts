@@ -123,7 +123,7 @@ serve(async (req) => {
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
-            content: `Padronize estas ${pieces.length} peças (uma linha de saída por peça, mesma ordem):\n\n${JSON.stringify(pieces)}`,
+            content: `${learningBlock}Padronize estas ${pieces.length} peças (uma linha de saída por peça, mesma ordem):\n\n${JSON.stringify(pieces)}`,
           },
         ],
         tools: [
