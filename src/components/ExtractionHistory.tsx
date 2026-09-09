@@ -253,7 +253,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       {busyId === entry.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <NaturaMark size={20} />
+                        <NaturaMark size={40} />
                       )}
                     </Button>
                     <Button
