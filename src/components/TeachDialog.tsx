@@ -88,7 +88,7 @@ export const TeachDialog = ({
     }
     setNaturaRows(null);
     getNaturaRows(extractionId)
-      .then((rows) => setNaturaRows(rows ?? []))
+      .then((rows) => setNaturaRows((rows ?? []) as NaturaRow[]))
       .catch(() => setNaturaRows([]));
   }, [open, extractionId, somenteGabarito]);
 
