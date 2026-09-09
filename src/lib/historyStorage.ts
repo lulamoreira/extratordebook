@@ -74,6 +74,28 @@ export async function getEntryPieces(id: string): Promise<Piece[]> {
   return Array.isArray(pieces) ? (pieces as Piece[]) : [];
 }
 
+/** Loads the Natura rows generated for a single extraction (used by the learning modes). */
+export async function getNaturaRows(id: string): Promise<unknown[]> {
+  const { data, error } = await supabase
+    .from("extractions")
+    .select("natura_rows")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  const rows = (data as { natura_rows?: unknown } | null)?.natura_rows;
+  return Array.isArray(rows) ? rows : [];
+}
+
+/** Stores the rows generated for the Natura spreadsheet, for later comparison. */
+export async function saveNaturaRows(id: string, rows: unknown[]): Promise<void> {
+  const { error } = await supabase
+    .from("extractions")
+    .update({ natura_rows: rows as unknown as never })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 export async function saveToHistory(
   fileName: string,
   pieces: Piece[],
