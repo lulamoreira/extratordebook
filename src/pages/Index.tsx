@@ -431,9 +431,12 @@ const Index = () => {
     entryCliente: ClienteId
   ) => {
     if (entryCliente === "rommanel") {
-      // Extração da Rommanel — tabela própria, somente leitura.
+      // Extração da Rommanel — tela própria de revisão peça a peça.
       setPieces([]);
-      setRommanelPieces(loaded as unknown as RommanelPiece[]);
+      setRommanelPieces(
+        normalizarRommanelPieces(loaded as unknown as RommanelPiece[])
+      );
+      setRommanelTotalPages(undefined);
     } else {
       setRommanelPieces([]);
       setPieces(normalizePieces(loaded));
