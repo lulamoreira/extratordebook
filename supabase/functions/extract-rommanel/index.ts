@@ -32,6 +32,10 @@ Um kit gera UMA LINHA POR PEÇA. Isto é o comportamento padrão e deve ser segu
 
 Em todos esses casos, só a PRIMEIRA linha do kit recebe unidadeCompra=true, nomeColunaVarejo e a especificação completa. As demais ficam com unidadeCompra=false, nomeColunaVarejo vazio e especificacao vazia.
 
+A UNIDADE DE COMPRA É SEMPRE A PRIMEIRA LINHA DO KIT — regra sem exceção:
+
+unidadeCompra=true vai OBRIGATORIAMENTE na primeira linha que você gerar para aquele kit, nunca na última nem no meio. A primeira linha do kit é a peça principal, a que dá nome ao kit: o painel, a placa de fundo, o revestimento superior, o cubo P. Ordene as linhas do kit de modo que essa peça principal venha primeiro. Antes de responder, confira kit por kit: a linha marcada como unidade de compra é a primeira do grupo?
+
 EXCEÇÃO ÚNICA — EMPILHAR (uma linha só):
 
 Aplica-se EXCLUSIVAMENTE a kits formados por um PAINEL DE BANNER mais os seus APLIQUES. Nenhum outro caso.
@@ -45,6 +49,19 @@ VERIFICAÇÃO OBRIGATÓRIA antes de responder:
 Percorra as páginas desta parte e confirme, uma a uma: toda página que mostra uma planificação com N recortes cotados gerou N linhas? Todo conjunto com N peças distintas gerou N linhas? Se alguma gerou menos, corrija antes de responder. Colapsar um kit que não seja painel+apliques é erro.
 
 nomeColunaVarejo: nome CURTO e em MAIÚSCULAS que identifica a unidade de compra na planilha de lojas. Exemplos reais deste cliente: "PANCARTA CURADORIA", "KIT PANCARTA FOTO", "ADESIVO QR CODE", "MÓBILE", "EXPOSITOR FERRADURA", "KIT CUBOS", "ADESIVO PISO", "KIT PLACA ESPAÇO AC", "CHAPÉU", "KIT BANNER PRIMÁRIO", "REVESTIMENTO P", "TOPO DE MESA P", "TOPO DE MESA P LOGO", "BACKLIGHT GG", "CARTAZETE".
+
+O NOME DA COLUNA VAREJO É ÚNICO NO BOOK INTEIRO:
+
+Duas unidades de compra NUNCA podem receber o mesmo nomeColunaVarejo — na planilha isso viraria coluna duplicada.
+
+Ao encurtar o nome, PRESERVE o termo que diferencia a peça das suas irmãs. Esse termo quase sempre está no nome do arquivo impresso na página. Exemplos reais deste cliente, todos distintos entre si:
+  BACKLIGHT PP, BACKLIGHT P, BACKLIGHT M, BACKLIGHT G, BACKLIGHT GG, BACKLIGHT PARTAGE, BACKLIGHT ESPECIAL, BACKLIGHT JEQUITIBÁ, BACKLIGHT CARIRI
+  CARTAZETE, CARTAZETE CONCEITO NOVO, CARTAZETE MORUMBI
+  TOPO DE MESA P, TOPO DE MESA M, TOPO DE MESA G, TOPO DE MESA ANALIA, e as versões LOGO de cada um
+
+Nunca colapse "CARTAZETE CONCEITO NOVO" em "CARTAZETE", nem "BACKLIGHT PARTAGE" em "BACKLIGHT GG". Se duas peças ficariam com o mesmo nome, acrescente o diferenciador (tamanho, praça, versão) até ficarem distintas.
+
+Antes de responder, liste mentalmente todos os nomeColunaVarejo desta parte e confirme que não há dois iguais.
 
 ESPECIFICAÇÃO — vocabulário obrigatório da Rommanel.
 Escreva uma frase técnica de produção usando o vocabulário abaixo, que são as frases reais aprovadas por este cliente. Escolha e adapte a mais próxima; nunca invente material fora desta lista sem que o book diga explicitamente:
