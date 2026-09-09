@@ -306,6 +306,7 @@ const toExample = (row: Record<string, unknown>): SpecExample => ({
 /** Upsert com precedência: book > planilha > gabarito; entre iguais, o novo vence. */
 export async function salvarExemplos(
   itens: AprendizadoItem[],
+  cliente: ClienteId,
   extractionId?: string | null
 ): Promise<ResultadoGravacao> {
   if (itens.length === 0) return { novas: 0, atualizadas: 0, ignoradas: 0 };
@@ -330,6 +331,7 @@ export async function salvarExemplos(
     const { data, error } = await supabase
       .from("spec_examples")
       .select("chave, origem")
+      .eq("cliente", cliente)
       .in("chave", chaves.slice(i, i + PAGE_SIZE));
     if (error) throw new Error(error.message);
     for (const row of data ?? []) {
@@ -354,6 +356,7 @@ export async function salvarExemplos(
 
     payload.push({
       user_id: userId,
+      cliente,
       tipo: item.tipo,
       alvo: item.alvo,
       chave: item.chave,
@@ -374,7 +377,7 @@ export async function salvarExemplos(
   for (let i = 0; i < payload.length; i += 100) {
     const { error } = await supabase
       .from("spec_examples")
-      .upsert(payload.slice(i, i + 100) as never, { onConflict: "user_id,chave" });
+      .upsert(payload.slice(i, i + 100) as never, { onConflict: "user_id,cliente,chave" });
     if (error) throw new Error(error.message);
   }
 
@@ -383,7 +386,8 @@ export async function salvarExemplos(
 
 /** Quantas dessas chaves já existem (para o resumo do diálogo de confirmação). */
 export async function contarNovidades(
-  itens: AprendizadoItem[]
+  itens: AprendizadoItem[],
+  cliente: ClienteId
 ): Promise<{ novas: number; atualizadas: number }> {
   const chaves = [...new Set(itens.map((i) => i.chave).filter(Boolean))];
   if (chaves.length === 0) return { novas: 0, atualizadas: 0 };
@@ -393,6 +397,7 @@ export async function contarNovidades(
     const { data, error } = await supabase
       .from("spec_examples")
       .select("chave")
+      .eq("cliente", cliente)
       .in("chave", chaves.slice(i, i + PAGE_SIZE));
     if (error) throw new Error(error.message);
     for (const row of data ?? []) existentes.add(String(row.chave));
@@ -401,6 +406,7 @@ export async function contarNovidades(
   const atualizadas = chaves.filter((c) => existentes.has(c)).length;
   return { novas: chaves.length - atualizadas, atualizadas };
 }
+
 
 /** Listagem paginada — nunca um select solto (trunca em 1000 silenciosamente). */
 export async function listarExemplos(tipo?: Tipo): Promise<SpecExample[]> {
