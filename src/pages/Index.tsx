@@ -654,18 +654,22 @@ const Index = () => {
                 </Button>
                 <Button
                   onClick={handleGerarNatura}
-                  disabled={isGeneratingNatura}
+                  disabled={isGeneratingNatura || !clienteAtual.planilhaPronta}
                   className="gap-2"
                   size="sm"
                   variant="secondary"
-                  title="Gerar Planilha Padrão Natura"
+                  title={
+                    clienteAtual.planilhaPronta
+                      ? `Gerar Planilha Padrão ${clienteAtual.nome}`
+                      : "A planilha da Rommanel entra em uma próxima etapa."
+                  }
                 >
                   {isGeneratingNatura ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <NaturaMark size={44} />
+                    <ClienteMark cliente={cliente} size={44} />
                   )}
-                  Gerar Planilha Padrão Natura
+                  Gerar Planilha Padrão {clienteAtual.nome}
                 </Button>
                 <Button
                   onClick={() => setTeachOpen(true)}
@@ -797,6 +801,7 @@ const Index = () => {
         open={teachOpen}
         onOpenChange={setTeachOpen}
         extractionId={currentEntryId}
+        cliente={cliente}
       />
     </div>
   );
