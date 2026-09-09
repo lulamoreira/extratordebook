@@ -44,6 +44,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
   const [nicknameInput, setNicknameInput] = useState("");
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [teachId, setTeachId] = useState<string | null>(null);
 
   const reload = useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsLoading(true);
