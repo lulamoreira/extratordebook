@@ -26,7 +26,7 @@ export const CLIENTES: Record<ClienteId, Cliente> = {
     nome: "Rommanel",
     corPrimaria: "#4B2E5A",
     extracaoPronta: true,
-    planilhaPronta: false,
+    planilhaPronta: true,
   },
 };
 
