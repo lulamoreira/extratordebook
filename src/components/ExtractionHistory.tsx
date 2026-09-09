@@ -302,6 +302,15 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
         open={teachId !== null}
         onOpenChange={(open) => !open && setTeachId(null)}
         extractionId={teachId}
+        onGenerateNatura={
+          teachId
+            ? async () => {
+                const entry = history.find((e) => e.id === teachId);
+                if (!entry) throw new Error("Extração não encontrada.");
+                await generateNatura(entry);
+              }
+            : undefined
+        }
       />
     </Card>
   );
