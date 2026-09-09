@@ -30,6 +30,15 @@ Uma única página pode gerar VÁRIAS linhas.
 - Em TODO kit, apenas a PRIMEIRA linha recebe unidadeCompra=true e nomeColunaVarejo preenchido. As demais recebem unidadeCompra=false e nomeColunaVarejo vazio. A especificação completa também vai só na primeira linha; as filhas ficam com especificacao vazia.
 - Peça avulsa (uma página, uma peça) recebe unidadeCompra=true.
 
+EXCEÇÃO — KITS DE BANNER (convenção obrigatória deste cliente, convive com as regras acima):
+Kits formados por um PAINEL mais seus APLIQUES NÃO expandem em várias linhas. Eles ocupam UMA ÚNICA linha, com as peças empilhadas dentro do mesmo campo, separadas por quebra de linha (\n), na ordem painel primeiro e apliques depois:
+- nomePeca recebe os nomes empilhados. Ex: "PAINEL PRIMÁRIO\nAPLIQUE COLEÇÃO\nAPLIQUE ANA CASTELA"
+- pagina, nesse caso, é a página do PAINEL; e o campo tamanho recebe os tamanhos empilhados na mesma ordem dos nomes. Ex: "70X100\n29x11\n21x8"
+- O campo paginas (string) recebe as páginas empilhadas na mesma ordem, sempre relativas a este arquivo enviado, começando em 1. Ex: "17\n19\n20". Quando todas as peças estiverem na mesma página, paginas recebe só um número.
+- A linha inteira é uma única unidade de compra: unidadeCompra=true, com nomeColunaVarejo como "KIT BANNER PRIMÁRIO", "KIT BANNER SECUNDÁRIO", "KIT BANNER AQUÁRIO PRIMÁRIO" ou "KIT BANNER AQUÁRIO SECUNDÁRIO".
+- A especificação usa o formato de duas linhas rotuladas PAINEL: / APLIQUES: descrito na seção ESPECIFICAÇÃO.
+Isto vale SOMENTE para painel + apliques. Todos os outros kits continuam expandindo em uma linha por peça, como já está escrito: cubos viram 3 linhas, a placa do espaço vira 3 linhas, e as planificações de revestimento viram 5 linhas.
+
 nomeColunaVarejo: nome CURTO e em MAIÚSCULAS que identifica a unidade de compra na planilha de lojas. Exemplos reais deste cliente: "PANCARTA CURADORIA", "KIT PANCARTA FOTO", "ADESIVO QR CODE", "MÓBILE", "EXPOSITOR FERRADURA", "KIT CUBOS", "ADESIVO PISO", "KIT PLACA ESPAÇO AC", "CHAPÉU", "KIT BANNER PRIMÁRIO", "REVESTIMENTO P", "TOPO DE MESA P", "TOPO DE MESA P LOGO", "BACKLIGHT GG", "CARTAZETE".
 
 ESPECIFICAÇÃO — vocabulário obrigatório da Rommanel.
@@ -141,6 +150,11 @@ serve(async (req) => {
                           description:
                             "Posição da página DENTRO deste arquivo enviado, começando em 1. Não use o número impresso na página.",
                         },
+                        paginas: {
+                          type: "string",
+                          description:
+                            "Páginas empilhadas com \\n na mesma ordem de nomePeca/tamanho (kits de banner), relativas a este arquivo começando em 1. Peças normais: mesmo valor de paginaNoArquivo.",
+                        },
                         localInstalacao: {
                           type: "string",
                           description: "Local de instalação definido pela capa de seção vigente",
@@ -168,6 +182,7 @@ serve(async (req) => {
                       },
                       required: [
                         "paginaNoArquivo",
+                        "paginas",
                         "localInstalacao",
                         "kit",
                         "nomePeca",
