@@ -65,6 +65,7 @@ export const TeachDialog = ({
   onOpenChange,
   extractionId,
   somenteGabarito = false,
+  onGenerateNatura,
   onLearned,
 }: TeachDialogProps) => {
   const [modo, setModo] = useState<Modo>(somenteGabarito ? "gabarito" : "planilha");
