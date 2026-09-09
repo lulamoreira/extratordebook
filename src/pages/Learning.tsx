@@ -52,11 +52,12 @@ const Learning = () => {
   const [busca, setBusca] = useState("");
   const [aba, setAba] = useState<Tipo>("exemplo");
   const [teachOpen, setTeachOpen] = useState(false);
+  const [filtro, setFiltro] = useState<FiltroCliente>("todos");
 
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
-      setItens(await listarExemplos());
+      setItens(await listarExemplos("todos"));
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível carregar o aprendizado.");
@@ -69,16 +70,27 @@ const Learning = () => {
     void carregar();
   }, [carregar]);
 
+  const porCliente = useMemo(() => {
+    const mapa = new Map<ClienteId, number>();
+    for (const i of itens) mapa.set(i.cliente, (mapa.get(i.cliente) ?? 0) + 1);
+    return mapa;
+  }, [itens]);
+
+  const doFiltro = useMemo(
+    () => (filtro === "todos" ? itens : itens.filter((i) => i.cliente === filtro)),
+    [itens, filtro]
+  );
+
   const filtrados = useMemo(() => {
     const termo = normalizar(busca);
-    return itens
+    return doFiltro
       .filter((i) => i.tipo === aba)
       .filter((i) =>
         !termo
           ? true
           : normalizar(`${i.item} ${i.nome} ${i.grupo} ${i.especificacaoCorreta}`).includes(termo)
       );
-  }, [itens, aba, busca]);
+  }, [doFiltro, aba, busca]);
 
   const remover = async (id: string) => {
     try {
@@ -92,14 +104,16 @@ const Learning = () => {
 
   const removerTudo = async () => {
     try {
-      await excluirTodosExemplos();
-      setItens([]);
+      // Respeita o filtro ativo: nunca apaga os dois clientes sem escolha explícita.
+      await excluirTodosExemplos(filtro);
+      setItens((prev) => (filtro === "todos" ? [] : prev.filter((i) => i.cliente !== filtro)));
       toast.success("Aprendizado apagado.");
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível apagar o aprendizado.");
     }
   };
+
 
   const vazio = (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
