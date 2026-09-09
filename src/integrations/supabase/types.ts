@@ -20,6 +20,7 @@ export type Database = {
           errors: Json
           file_name: string
           id: string
+          natura_rows: Json
           nickname: string
           piece_count: number
           pieces: Json
@@ -31,6 +32,7 @@ export type Database = {
           errors?: Json
           file_name?: string
           id?: string
+          natura_rows?: Json
           nickname?: string
           piece_count?: number
           pieces?: Json
@@ -42,6 +44,7 @@ export type Database = {
           errors?: Json
           file_name?: string
           id?: string
+          natura_rows?: Json
           nickname?: string
           piece_count?: number
           pieces?: Json
