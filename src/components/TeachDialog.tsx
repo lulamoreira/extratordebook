@@ -35,6 +35,11 @@ export interface TeachDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Extração vinculada (histórico ou tabela na tela). Opcional. */
   extractionId?: string | null;
+  /**
+   * Cliente em que o aprendizado será gravado — o da extração vinculada ou,
+   * quando não houver extração, o cliente selecionado na tela.
+   */
+  cliente: ClienteId;
   /** Só permite o modo gabarito (usado na página de aprendizado). */
   somenteGabarito?: boolean;
   /** Gera a Planilha Padrão Natura da extração vinculada (mesma ação do histórico). */
