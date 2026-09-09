@@ -596,7 +596,7 @@ const Index = () => {
                   {isGeneratingNatura ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <NaturaMark size={22} />
+                    <NaturaMark size={44} />
                   )}
                   Gerar Planilha Padrão Natura
                 </Button>
