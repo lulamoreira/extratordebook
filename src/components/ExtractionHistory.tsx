@@ -165,12 +165,30 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     }
   };
 
+  const visiveis = filtro === "todos" ? history : history.filter((e) => e.cliente === filtro);
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-bold">
-          <History className="h-4 w-4 text-muted-foreground" />
-          Últimas extrações
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base font-bold">
+          <span className="flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            Últimas extrações
+          </span>
+          <div className="flex items-center gap-1">
+            {([{ id: "todos", nome: "Todos" }, ...LISTA_CLIENTES] as { id: FiltroCliente; nome: string }[]).map((op) => (
+              <Button
+                key={op.id}
+                type="button"
+                variant={filtro === op.id ? "default" : "secondary"}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setFiltro(op.id)}
+              >
+                {op.nome}
+              </Button>
+            ))}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -180,20 +198,24 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
               <Skeleton key={i} className="h-10 w-full rounded-md" />
             ))}
           </div>
-        ) : history.length === 0 ? (
+        ) : visiveis.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <div className="opacity-30 grayscale">
               <Logo size={40} />
             </div>
             <p className="text-sm text-muted-foreground">
-              Nenhuma extração ainda — envie um PDF para começar
+              {history.length === 0
+                ? "Nenhuma extração ainda — envie um PDF para começar"
+                : "Nenhuma extração deste cliente"}
             </p>
           </div>
         ) : (
-          history.map((entry) => (
+          visiveis.map((entry) => (
             <div key={entry.id} className="space-y-0">
               <div className="group flex items-center gap-2 rounded-md bg-background px-3 py-2 transition-colors hover:bg-muted">
+                <ClienteMark cliente={entry.cliente} size={20} />
                 <FileSpreadsheet className="h-4 w-4 shrink-0 text-primary" />
+
 
                 {editingId === entry.id ? (
                   <div className="flex flex-1 items-center gap-1">
