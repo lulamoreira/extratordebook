@@ -196,6 +196,10 @@ const Index = () => {
   };
 
   const processFile = useCallback(async (file: File) => {
+    if (!getCliente(cliente).extracaoPronta) {
+      toast.error("A extração deste cliente ainda não está disponível.");
+      return;
+    }
     if (file.type !== "application/pdf") {
       toast.error("Apenas arquivos PDF são aceitos.");
       return;
@@ -205,6 +209,7 @@ const Index = () => {
       toast.error("Arquivo muito grande (máx. 50MB).");
       return;
     }
+
 
     setFileName(file.name);
     setIsExtracting(true);
