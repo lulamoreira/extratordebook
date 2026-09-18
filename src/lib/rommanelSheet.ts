@@ -661,21 +661,15 @@ export async function gerarPastaRommanel(
   const headerNf = cabDesc.row;
   const inicioNf = headerNf + 1;
 
-  let somaNf = 0;
-  for (let r = inicioNf; r <= dadosNf!.rowCount + 1; r++) {
-    let temSoma = false;
-    dadosNf!.getRow(r).eachCell({ includeEmpty: false }, (cell) => {
-      const f = (cell.value as { formula?: string } | null)?.formula;
-      if (f && f.toUpperCase().includes("SUM")) temSoma = true;
-    });
-    if (temSoma) {
-      somaNf = r;
-      break;
-    }
-  }
-  if (!somaNf) somaNf = inicioNf + 1;
+  // Busca sem materializar linhas. 0 = a DADOS NF vinha sem as peças.
+  const somaNf = acharLinhaSoma(dadosNf!, inicioNf);
+  const antigasNf = somaNf > 0 ? Math.max(0, somaNf - inicioNf) : 0;
+  relatorio.caminhos.push(
+    somaNf > 0
+      ? `DADOS NF: bloco antigo encontrado com ${antigasNf} linha(s).`
+      : "DADOS NF: vinha vazia, bloco criado do zero."
+  );
 
-  const antigasNf = Math.max(0, somaNf - inicioNf);
 
   // Modelo da DADOS NF: um estilo por coluna, criado uma vez.
   const ESTILOS_NF: Partial<ExcelJS.Style>[] = Array.from({ length: 8 }, (_, k) => {
