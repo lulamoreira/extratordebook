@@ -714,14 +714,16 @@ export async function gerarPastaRommanel(
   }
   relatorio.linhasDadosNf = unidades.length;
 
-  dadosNf!.getRow(novaSomaNf).eachCell({ includeEmpty: false }, (cell, c) => {
-    const f = (cell.value as { formula?: string } | null)?.formula;
-    if (f && f.toUpperCase().includes("SUM")) {
-      cell.value = {
-        formula: `SUM(${letra(dadosNf!, c)}${inicioNf}:${letra(dadosNf!, c)}${novaSomaNf - 1})`,
-      };
-    }
-  });
+  if (somaNf > 0) {
+    dadosNf!.getRow(novaSomaNf).eachCell({ includeEmpty: false }, (cell, c) => {
+      const f = (cell.value as { formula?: string } | null)?.formula;
+      if (f && f.toUpperCase().includes("SUM")) {
+        cell.value = {
+          formula: `SUM(${letra(dadosNf!, c)}${inicioNf}:${letra(dadosNf!, c)}${novaSomaNf - 1})`,
+        };
+      }
+    });
+  }
 
   /* --- Conferência ------------------------------------------------ */
   onProgress?.("Conferindo o resultado...", 90);
