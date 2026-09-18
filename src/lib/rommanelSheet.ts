@@ -499,31 +499,26 @@ export async function gerarPastaRommanel(
     return col;
   })();
 
-  let somaCampanha = 0;
-  for (let r = inicioDados; r <= abaCampanha.rowCount + 1; r++) {
-    const row = abaCampanha.getRow(r);
-    let temSoma = false;
-    row.eachCell({ includeEmpty: false }, (cell) => {
-      const f = (cell.value as { formula?: string } | null)?.formula;
-      if (f && f.toUpperCase().includes("SUM")) temSoma = true;
-    });
-    if (temSoma) {
-      somaCampanha = r;
-      break;
-    }
-  }
-  if (!somaCampanha) somaCampanha = inicioDados + 1;
+  // Busca sem materializar linhas. 0 = a aba da campanha vinha sem soma (vazia).
+  const somaCampanha = acharLinhaSoma(abaCampanha, inicioDados);
 
-  const antigas = Math.max(0, somaCampanha - inicioDados);
-  const diferenca = linhas.length - antigas;
-  if (diferenca > 0) {
-    abaCampanha.spliceRows(
-      somaCampanha,
-      0,
-      ...Array.from({ length: diferenca }, () => [] as unknown[])
-    );
-  } else if (diferenca < 0) {
-    abaCampanha.spliceRows(somaCampanha + diferenca, -diferenca);
+  if (somaCampanha > 0) {
+    const antigas = Math.max(0, somaCampanha - inicioDados);
+    relatorio.caminhos.push(`Aba da campanha: bloco antigo encontrado com ${antigas} linha(s).`);
+    const diferenca = linhas.length - antigas;
+    if (diferenca > 0) {
+      abaCampanha.spliceRows(
+        somaCampanha,
+        0,
+        ...Array.from({ length: diferenca }, () => [] as unknown[])
+      );
+    } else if (diferenca < 0) {
+      abaCampanha.spliceRows(somaCampanha + diferenca, -diferenca);
+    }
+  } else {
+    // Caminho normal do usuário: aba vinha vazia. Escrevemos do zero e a linha de
+    // soma nasce logo depois da última linha nova.
+    relatorio.caminhos.push("Aba da campanha: vinha vazia, bloco criado do zero.");
   }
   const novaSomaCampanha = inicioDados + linhas.length;
   const ultimaLinhaDados = novaSomaCampanha - 1;
