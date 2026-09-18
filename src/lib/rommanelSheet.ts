@@ -682,11 +682,13 @@ export async function gerarPastaRommanel(
     font: { ...(baseDesc.font ?? FONTE_11), bold: true },
   };
 
-  const difNf = unidades.length - antigasNf;
-  if (difNf > 0) {
-    dadosNf!.spliceRows(somaNf, 0, ...Array.from({ length: difNf }, () => [] as unknown[]));
-  } else if (difNf < 0) {
-    dadosNf!.spliceRows(somaNf + difNf, -difNf);
+  if (somaNf > 0) {
+    const difNf = unidades.length - antigasNf;
+    if (difNf > 0) {
+      dadosNf!.spliceRows(somaNf, 0, ...Array.from({ length: difNf }, () => [] as unknown[]));
+    } else if (difNf < 0) {
+      dadosNf!.spliceRows(somaNf + difNf, -difNf);
+    }
   }
   const novaSomaNf = inicioNf + unidades.length;
 
