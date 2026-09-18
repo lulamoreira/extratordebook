@@ -261,6 +261,17 @@ export async function gerarPastaRommanel(
   campanha: string,
   onProgress?: ProgressoRommanel
 ): Promise<ResultadoRommanel> {
+  // Rede de segurança: se algum laço passar do teto, erra com mensagem clara
+  // em vez de matar a aba do navegador.
+  let iteracoes = 0;
+  const passo = (): void => {
+    if (++iteracoes > MAX_ITERACOES) {
+      throw new Error(
+        "A geração excedeu o limite de segurança — envie a planilha base e me avise."
+      );
+    }
+  };
+
   const nomeCampanha = (campanha || "").trim().toUpperCase();
   if (!nomeCampanha) throw new Error("Informe o nome da campanha.");
 
