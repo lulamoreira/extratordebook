@@ -25,6 +25,8 @@ export interface RelatorioRommanel {
   secoesNovas: string[];
   /** Problemas que o usuário precisa confirmar antes de baixar. */
   problemas: string[];
+  /** Como cada aba foi tratada (bloco antigo encontrado x aba vinha vazia). */
+  caminhos: string[];
   ok: boolean;
 }
 
