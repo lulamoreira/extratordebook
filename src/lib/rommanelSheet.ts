@@ -629,17 +629,27 @@ export async function gerarPastaRommanel(
   await tick();
 
   // Fórmulas de soma do rodapé, com o intervalo novo.
-  abaCampanha.getRow(novaSomaCampanha).eachCell({ includeEmpty: false }, (cell, c) => {
-    const f = (cell.value as { formula?: string } | null)?.formula;
-    if (f && f.toUpperCase().includes("SUM")) {
-      cell.value = {
-        formula: `SUM(${letra(abaCampanha, c)}${inicioDados}:${letra(
-          abaCampanha,
-          c
-        )}${ultimaLinhaDados})`,
-      };
-    }
-  });
+  if (somaCampanha > 0) {
+    abaCampanha.getRow(novaSomaCampanha).eachCell({ includeEmpty: false }, (cell, c) => {
+      const f = (cell.value as { formula?: string } | null)?.formula;
+      if (f && f.toUpperCase().includes("SUM")) {
+        cell.value = {
+          formula: `SUM(${letra(abaCampanha, c)}${inicioDados}:${letra(
+            abaCampanha,
+            c
+          )}${ultimaLinhaDados})`,
+        };
+      }
+    });
+  } else {
+    // A aba vinha vazia: cria a soma da coluna Quant logo depois das linhas novas.
+    abaCampanha.getCell(novaSomaCampanha, 7).value = {
+      formula: `SUM(${letra(abaCampanha, 7)}${inicioDados}:${letra(
+        abaCampanha,
+        7
+      )}${ultimaLinhaDados})`,
+    };
+  }
   void cabTotal;
 
   /* --- DADOS NF --------------------------------------------------- */
