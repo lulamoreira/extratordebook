@@ -25,6 +25,8 @@ export interface RelatorioRommanel {
   secoesNovas: string[];
   /** Problemas que o usuário precisa confirmar antes de baixar. */
   problemas: string[];
+  /** Como cada aba foi tratada (bloco antigo encontrado x aba vinha vazia). */
+  caminhos: string[];
   ok: boolean;
 }
 
@@ -42,6 +44,32 @@ export type ProgressoRommanel = (etapa: string, percent: number) => void;
 
 /** Devolve o controle ao navegador (evita a aba ser morta e ajuda o GC). */
 const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
+/** Quantas linhas, no máximo, varremos ao sondar uma aba. */
+const MAX_VARREDURA = 2000;
+
+/** Rede de segurança: nenhum laço pode rodar indefinidamente. */
+const MAX_ITERACOES = 2_000_000;
+
+/**
+ * Procura a linha que contém uma fórmula SUM a partir de `inicio`, SEM materializar
+ * linhas inexistentes (getRow/getCell criariam linhas e inflariam o rowCount).
+ * Devolve 0 quando a aba não tem nenhuma soma (aba vinha vazia).
+ */
+function acharLinhaSoma(ws: ExcelJS.Worksheet, inicio: number): number {
+  let achada = 0;
+  const limite = inicio + MAX_VARREDURA;
+  ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (achada || rowNumber < inicio || rowNumber > limite) return;
+    let temSoma = false;
+    row.eachCell({ includeEmpty: false }, (cell) => {
+      const f = (cell.value as { formula?: string } | null)?.formula;
+      if (f && f.toUpperCase().includes("SUM")) temSoma = true;
+    });
+    if (temSoma) achada = rowNumber;
+  });
+  return achada;
+}
 
 const norm = (v: unknown): string =>
   String(v ?? "")
@@ -235,6 +263,17 @@ export async function gerarPastaRommanel(
   campanha: string,
   onProgress?: ProgressoRommanel
 ): Promise<ResultadoRommanel> {
+  // Rede de segurança: se algum laço passar do teto, erra com mensagem clara
+  // em vez de matar a aba do navegador.
+  let iteracoes = 0;
+  const passo = (): void => {
+    if (++iteracoes > MAX_ITERACOES) {
+      throw new Error(
+        "A geração excedeu o limite de segurança — envie a planilha base e me avise."
+      );
+    }
+  };
+
   const nomeCampanha = (campanha || "").trim().toUpperCase();
   if (!nomeCampanha) throw new Error("Informe o nome da campanha.");
 
@@ -277,6 +316,7 @@ export async function gerarPastaRommanel(
     quantEmBranco: [],
     secoesNovas: [],
     problemas: [],
+    caminhos: [],
     ok: true,
   };
 
@@ -292,8 +332,11 @@ export async function gerarPastaRommanel(
   const razao = acharCelula(varejo!, (t) => t.includes("RAZAO SOCIAL"));
   const colRazao = razao?.col ?? 2;
 
+  // Limite lido UMA vez: getCell() materializa linhas e faria rowCount crescer sem parar.
   let ultimaLinhaLoja = primeiraLinhaLoja;
-  for (let r = primeiraLinhaLoja; r <= varejo!.rowCount; r++) {
+  const limiteLojas = Math.min(varejo!.rowCount, primeiraLinhaLoja + MAX_VARREDURA);
+  for (let r = primeiraLinhaLoja; r <= limiteLojas; r++) {
+    passo();
     if (textoCelula(varejo!.getCell(r, colRazao)).trim() !== "") ultimaLinhaLoja = r;
   }
   const linhaTotais = ultimaLinhaLoja + 1;
@@ -307,6 +350,7 @@ export async function gerarPastaRommanel(
   // Onde começa o bloco de cauda (VALOR POR LOJA, PESO, ...).
   let inicioCauda = ultimaColunaUsada + 1;
   for (let c = primeiraColunaPeca; c <= ultimaColunaUsada; c++) {
+    passo();
     const t = norm(textoCelula(varejo!.getCell(headerVarejo, c)));
     if (t && CAUDA.some((k) => t.startsWith(k))) {
       inicioCauda = c;
@@ -350,6 +394,7 @@ export async function gerarPastaRommanel(
   // Cauda guardada por referência — esses estilos só são lidos e reatribuídos.
   const cauda: ColunaCauda[] = [];
   for (let c = inicioCauda; c <= ultimaColunaUsada; c++) {
+    passo();
     const header = varejo!.getCell(headerVarejo, c);
     const celulas: ColunaCauda["celulas"] = [];
     for (let r = primeiraLinhaLoja; r <= linhaTotalGeral; r++) {
@@ -367,6 +412,7 @@ export async function gerarPastaRommanel(
   desmesclar(varejo!, (m) => m.right >= primeiraColunaPeca && m.bottom >= headerVarejo);
   for (let r = headerVarejo; r <= linhaTotalGeral; r++) {
     for (let c = primeiraColunaPeca; c <= ultimaColunaUsada; c++) {
+      passo();
       limparCelula(varejo!.getCell(r, c));
     }
     if ((r - headerVarejo) % 200 === 199) await tick();
@@ -375,6 +421,7 @@ export async function gerarPastaRommanel(
   // Uma coluna por unidade de compra.
   const colunaDaPeca = new Map<RommanelPiece, number>();
   for (let i = 0; i < unidades.length; i++) {
+    passo();
     const p = unidades[i];
     const c = primeiraColunaPeca + i;
     colunaDaPeca.set(p, c);
@@ -459,31 +506,26 @@ export async function gerarPastaRommanel(
     return col;
   })();
 
-  let somaCampanha = 0;
-  for (let r = inicioDados; r <= abaCampanha.rowCount + 1; r++) {
-    const row = abaCampanha.getRow(r);
-    let temSoma = false;
-    row.eachCell({ includeEmpty: false }, (cell) => {
-      const f = (cell.value as { formula?: string } | null)?.formula;
-      if (f && f.toUpperCase().includes("SUM")) temSoma = true;
-    });
-    if (temSoma) {
-      somaCampanha = r;
-      break;
-    }
-  }
-  if (!somaCampanha) somaCampanha = inicioDados + 1;
+  // Busca sem materializar linhas. 0 = a aba da campanha vinha sem soma (vazia).
+  const somaCampanha = acharLinhaSoma(abaCampanha, inicioDados);
 
-  const antigas = Math.max(0, somaCampanha - inicioDados);
-  const diferenca = linhas.length - antigas;
-  if (diferenca > 0) {
-    abaCampanha.spliceRows(
-      somaCampanha,
-      0,
-      ...Array.from({ length: diferenca }, () => [] as unknown[])
-    );
-  } else if (diferenca < 0) {
-    abaCampanha.spliceRows(somaCampanha + diferenca, -diferenca);
+  if (somaCampanha > 0) {
+    const antigas = Math.max(0, somaCampanha - inicioDados);
+    relatorio.caminhos.push(`Aba da campanha: bloco antigo encontrado com ${antigas} linha(s).`);
+    const diferenca = linhas.length - antigas;
+    if (diferenca > 0) {
+      abaCampanha.spliceRows(
+        somaCampanha,
+        0,
+        ...Array.from({ length: diferenca }, () => [] as unknown[])
+      );
+    } else if (diferenca < 0) {
+      abaCampanha.spliceRows(somaCampanha + diferenca, -diferenca);
+    }
+  } else {
+    // Caminho normal do usuário: aba vinha vazia. Escrevemos do zero e a linha de
+    // soma nasce logo depois da última linha nova.
+    relatorio.caminhos.push("Aba da campanha: vinha vazia, bloco criado do zero.");
   }
   const novaSomaCampanha = inicioDados + linhas.length;
   const ultimaLinhaDados = novaSomaCampanha - 1;
@@ -501,6 +543,7 @@ export async function gerarPastaRommanel(
   const secoesNovas = new Set<string>();
 
   for (let i = 0; i < linhas.length; i++) {
+    passo();
     const p = linhas[i];
     const r = inicioDados + i;
     const branco = (campo: string) => p.camposEmBranco?.includes(campo as never);
@@ -566,9 +609,13 @@ export async function gerarPastaRommanel(
 
   let i = 0;
   while (i < linhas.length) {
+    passo();
     const local = linhas[i].localInstalacao;
     let fim = i;
-    while (fim + 1 < linhas.length && linhas[fim + 1].localInstalacao === local) fim++;
+    while (fim + 1 < linhas.length && linhas[fim + 1].localInstalacao === local) {
+      passo();
+      fim++;
+    }
     const cell = mesclarBloco(1, inicioDados + i, inicioDados + fim, (local || "").toUpperCase());
     cell.style = estiloFaixaCampanha(corDaSecao(local).cor.faixa) as ExcelJS.Style;
     i = fim + 1;
@@ -578,9 +625,13 @@ export async function gerarPastaRommanel(
   // Kit + especificação mesclados pelas linhas do mesmo kit (ou pela unidade de compra).
   let j = 0;
   while (j < linhas.length) {
+    passo();
     let fim = j;
     if (linhas[j].kit) {
-      while (fim + 1 < linhas.length && linhas[fim + 1].kit === linhas[j].kit) fim++;
+      while (fim + 1 < linhas.length && linhas[fim + 1].kit === linhas[j].kit) {
+        passo();
+        fim++;
+      }
       mesclarBloco(2, inicioDados + j, inicioDados + fim, linhas[j].kit.toUpperCase());
     }
     const espBranca = linhas[j].camposEmBranco?.includes("especificacao");
@@ -591,17 +642,27 @@ export async function gerarPastaRommanel(
   await tick();
 
   // Fórmulas de soma do rodapé, com o intervalo novo.
-  abaCampanha.getRow(novaSomaCampanha).eachCell({ includeEmpty: false }, (cell, c) => {
-    const f = (cell.value as { formula?: string } | null)?.formula;
-    if (f && f.toUpperCase().includes("SUM")) {
-      cell.value = {
-        formula: `SUM(${letra(abaCampanha, c)}${inicioDados}:${letra(
-          abaCampanha,
-          c
-        )}${ultimaLinhaDados})`,
-      };
-    }
-  });
+  if (somaCampanha > 0) {
+    abaCampanha.getRow(novaSomaCampanha).eachCell({ includeEmpty: false }, (cell, c) => {
+      const f = (cell.value as { formula?: string } | null)?.formula;
+      if (f && f.toUpperCase().includes("SUM")) {
+        cell.value = {
+          formula: `SUM(${letra(abaCampanha, c)}${inicioDados}:${letra(
+            abaCampanha,
+            c
+          )}${ultimaLinhaDados})`,
+        };
+      }
+    });
+  } else {
+    // A aba vinha vazia: cria a soma da coluna Quant logo depois das linhas novas.
+    abaCampanha.getCell(novaSomaCampanha, 7).value = {
+      formula: `SUM(${letra(abaCampanha, 7)}${inicioDados}:${letra(
+        abaCampanha,
+        7
+      )}${ultimaLinhaDados})`,
+    };
+  }
   void cabTotal;
 
   /* --- DADOS NF --------------------------------------------------- */
@@ -613,21 +674,15 @@ export async function gerarPastaRommanel(
   const headerNf = cabDesc.row;
   const inicioNf = headerNf + 1;
 
-  let somaNf = 0;
-  for (let r = inicioNf; r <= dadosNf!.rowCount + 1; r++) {
-    let temSoma = false;
-    dadosNf!.getRow(r).eachCell({ includeEmpty: false }, (cell) => {
-      const f = (cell.value as { formula?: string } | null)?.formula;
-      if (f && f.toUpperCase().includes("SUM")) temSoma = true;
-    });
-    if (temSoma) {
-      somaNf = r;
-      break;
-    }
-  }
-  if (!somaNf) somaNf = inicioNf + 1;
+  // Busca sem materializar linhas. 0 = a DADOS NF vinha sem as peças.
+  const somaNf = acharLinhaSoma(dadosNf!, inicioNf);
+  const antigasNf = somaNf > 0 ? Math.max(0, somaNf - inicioNf) : 0;
+  relatorio.caminhos.push(
+    somaNf > 0
+      ? `DADOS NF: bloco antigo encontrado com ${antigasNf} linha(s).`
+      : "DADOS NF: vinha vazia, bloco criado do zero."
+  );
 
-  const antigasNf = Math.max(0, somaNf - inicioNf);
 
   // Modelo da DADOS NF: um estilo por coluna, criado uma vez.
   const ESTILOS_NF: Partial<ExcelJS.Style>[] = Array.from({ length: 8 }, (_, k) => {
@@ -640,15 +695,18 @@ export async function gerarPastaRommanel(
     font: { ...(baseDesc.font ?? FONTE_11), bold: true },
   };
 
-  const difNf = unidades.length - antigasNf;
-  if (difNf > 0) {
-    dadosNf!.spliceRows(somaNf, 0, ...Array.from({ length: difNf }, () => [] as unknown[]));
-  } else if (difNf < 0) {
-    dadosNf!.spliceRows(somaNf + difNf, -difNf);
+  if (somaNf > 0) {
+    const difNf = unidades.length - antigasNf;
+    if (difNf > 0) {
+      dadosNf!.spliceRows(somaNf, 0, ...Array.from({ length: difNf }, () => [] as unknown[]));
+    } else if (difNf < 0) {
+      dadosNf!.spliceRows(somaNf + difNf, -difNf);
+    }
   }
   const novaSomaNf = inicioNf + unidades.length;
 
   for (let k = 0; k < unidades.length; k++) {
+    passo();
     const p = unidades[k];
     const r = inicioNf + k;
     for (let c = 1; c <= 8; c++) {
@@ -670,14 +728,16 @@ export async function gerarPastaRommanel(
   }
   relatorio.linhasDadosNf = unidades.length;
 
-  dadosNf!.getRow(novaSomaNf).eachCell({ includeEmpty: false }, (cell, c) => {
-    const f = (cell.value as { formula?: string } | null)?.formula;
-    if (f && f.toUpperCase().includes("SUM")) {
-      cell.value = {
-        formula: `SUM(${letra(dadosNf!, c)}${inicioNf}:${letra(dadosNf!, c)}${novaSomaNf - 1})`,
-      };
-    }
-  });
+  if (somaNf > 0) {
+    dadosNf!.getRow(novaSomaNf).eachCell({ includeEmpty: false }, (cell, c) => {
+      const f = (cell.value as { formula?: string } | null)?.formula;
+      if (f && f.toUpperCase().includes("SUM")) {
+        cell.value = {
+          formula: `SUM(${letra(dadosNf!, c)}${inicioNf}:${letra(dadosNf!, c)}${novaSomaNf - 1})`,
+        };
+      }
+    });
+  }
 
   /* --- Conferência ------------------------------------------------ */
   onProgress?.("Conferindo o resultado...", 90);
@@ -709,6 +769,7 @@ export async function gerarPastaRommanel(
 
   // Toda fórmula =VAREJO! precisa apontar para uma coluna com cabeçalho.
   for (let r = inicioDados; r <= ultimaLinhaDados; r++) {
+    passo();
     const f = (abaCampanha.getCell(r, 7).value as { formula?: string } | null)?.formula;
     if (!f || !f.toUpperCase().includes("VAREJO!")) continue;
     const ref = f.match(/VAREJO!\$?([A-Z]+)\$?(\d+)/i);
