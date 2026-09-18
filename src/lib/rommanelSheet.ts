@@ -316,6 +316,7 @@ export async function gerarPastaRommanel(
     quantEmBranco: [],
     secoesNovas: [],
     problemas: [],
+    caminhos: [],
     ok: true,
   };
 
