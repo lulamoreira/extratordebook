@@ -138,6 +138,9 @@ export async function extrairBookRommanel(
 
     statuses[i].status = ok ? "done" : "error";
     if (!ok) falhas.push({ index: i, error: ultimoErro });
+    // Libera o base64 da parte: ele não é mais necessário e ocupa muita memória,
+    // que a geração da planilha vai precisar depois.
+    parts[i].base64 = "";
     report(Math.round(10 + ((i + 1) / parts.length) * 70));
   }
 
