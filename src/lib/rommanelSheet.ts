@@ -43,6 +43,32 @@ export type ProgressoRommanel = (etapa: string, percent: number) => void;
 /** Devolve o controle ao navegador (evita a aba ser morta e ajuda o GC). */
 const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
+/** Quantas linhas, no máximo, varremos ao sondar uma aba. */
+const MAX_VARREDURA = 2000;
+
+/** Rede de segurança: nenhum laço pode rodar indefinidamente. */
+const MAX_ITERACOES = 2_000_000;
+
+/**
+ * Procura a linha que contém uma fórmula SUM a partir de `inicio`, SEM materializar
+ * linhas inexistentes (getRow/getCell criariam linhas e inflariam o rowCount).
+ * Devolve 0 quando a aba não tem nenhuma soma (aba vinha vazia).
+ */
+function acharLinhaSoma(ws: ExcelJS.Worksheet, inicio: number): number {
+  let achada = 0;
+  const limite = inicio + MAX_VARREDURA;
+  ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (achada || rowNumber < inicio || rowNumber > limite) return;
+    let temSoma = false;
+    row.eachCell({ includeEmpty: false }, (cell) => {
+      const f = (cell.value as { formula?: string } | null)?.formula;
+      if (f && f.toUpperCase().includes("SUM")) temSoma = true;
+    });
+    if (temSoma) achada = rowNumber;
+  });
+  return achada;
+}
+
 const norm = (v: unknown): string =>
   String(v ?? "")
     .normalize("NFD")
