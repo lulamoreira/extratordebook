@@ -4,6 +4,12 @@
  * REGRA INEGOCIÁVEL: o arquivo enviado pelo usuário nunca é alterado — tudo
  * acontece sobre o buffer em memória e o resultado é um arquivo novo.
  *
+ * DESEMPENHO: todos os estilos são criados UMA única vez e reaproveitados por
+ * referência. Objetos de estilo são tratados como IMUTÁVEIS: nunca mutamos um
+ * objeto já atribuído a alguma célula (por isso não usamos cell.font = ...,
+ * cell.border = ... depois de atribuir cell.style). Os laços pesados devolvem
+ * o controle ao navegador periodicamente.
+ *
  * Nada aqui é compartilhado com o fluxo da Natura (src/lib/naturaSheet.ts).
  */
 import ExcelJS from "exceljs";
@@ -34,6 +40,9 @@ export type ProgressoRommanel = (etapa: string, percent: number) => void;
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
+/** Devolve o controle ao navegador (evita a aba ser morta e ajuda o GC). */
+const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
 const norm = (v: unknown): string =>
   String(v ?? "")
     .normalize("NFD")
@@ -58,26 +67,60 @@ const textoCelula = (cell: ExcelJS.Cell): string => {
   return String(v);
 };
 
-const clonarEstilo = (cell: ExcelJS.Cell): Partial<ExcelJS.Style> =>
-  JSON.parse(JSON.stringify(cell.style ?? {})) as Partial<ExcelJS.Style>;
-
 const limparCelula = (cell: ExcelJS.Cell): void => {
   cell.value = null;
   cell.style = {} as ExcelJS.Style;
 };
 
-const bordaFina = (): Partial<ExcelJS.Borders> => ({
+/* --- Constantes de estilo (criadas uma vez, compartilhadas) -------- */
+
+const BORDA_FINA: Partial<ExcelJS.Borders> = {
   top: { style: "thin" },
   left: { style: "thin" },
   bottom: { style: "thin" },
   right: { style: "thin" },
-});
+};
 
-const preenchimento = (argb: string): ExcelJS.FillPattern => ({
-  type: "pattern",
-  pattern: "solid",
-  fgColor: { argb },
-});
+const ALINHAMENTO_CENTRO: Partial<ExcelJS.Alignment> = {
+  horizontal: "center",
+  vertical: "middle",
+};
+
+const ALINHAMENTO_CENTRO_WRAP: Partial<ExcelJS.Alignment> = {
+  horizontal: "center",
+  vertical: "middle",
+  wrapText: true,
+};
+
+const ALINHAMENTO_FAIXA: Partial<ExcelJS.Alignment> = {
+  horizontal: "center",
+  vertical: "middle",
+  textRotation: 90,
+  wrapText: true,
+};
+
+const FONTE_11: Partial<ExcelJS.Font> = { name: "Calibri", size: 11 };
+const FONTE_12_BOLD: Partial<ExcelJS.Font> = { name: "Calibri", size: 12, bold: true };
+const FONTE_FAIXA: Partial<ExcelJS.Font> = {
+  name: "Calibri",
+  size: 18,
+  bold: true,
+  color: { argb: "FFFFFFFF" },
+};
+
+/** Um único objeto de preenchimento por cor, memorizado. */
+const fills = new Map<string, ExcelJS.FillPattern>();
+const preenchimento = (argb: string): ExcelJS.FillPattern => {
+  const atual = fills.get(argb);
+  if (atual) return atual;
+  const novo: ExcelJS.FillPattern = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb },
+  };
+  fills.set(argb, novo);
+  return novo;
+};
 
 /** Localiza a primeira célula cujo texto normalizado bate com o predicado. */
 function acharCelula(
@@ -151,6 +194,35 @@ const corDaSecao = (local: string): { cor: CorSecao; conhecida: boolean } => {
   return cor ? { cor, conhecida: true } : { cor: COR_PADRAO, conhecida: false };
 };
 
+/** Estilos por cor da aba da campanha, criados sob demanda e reusados. */
+const estilosCampanha = new Map<string, Partial<ExcelJS.Style>>();
+const estiloCorpoCampanha = (argb: string): Partial<ExcelJS.Style> => {
+  const chave = `corpo:${argb}`;
+  const atual = estilosCampanha.get(chave);
+  if (atual) return atual;
+  const novo: Partial<ExcelJS.Style> = {
+    font: FONTE_11,
+    alignment: ALINHAMENTO_CENTRO_WRAP,
+    border: BORDA_FINA,
+    fill: preenchimento(argb),
+  };
+  estilosCampanha.set(chave, novo);
+  return novo;
+};
+const estiloFaixaCampanha = (argb: string): Partial<ExcelJS.Style> => {
+  const chave = `faixa:${argb}`;
+  const atual = estilosCampanha.get(chave);
+  if (atual) return atual;
+  const novo: Partial<ExcelJS.Style> = {
+    font: FONTE_FAIXA,
+    alignment: ALINHAMENTO_FAIXA,
+    border: BORDA_FINA,
+    fill: preenchimento(argb),
+  };
+  estilosCampanha.set(chave, novo);
+  return novo;
+};
+
 /* ------------------------------------------------------------------ */
 /* Geração                                                             */
 /* ------------------------------------------------------------------ */
@@ -209,7 +281,7 @@ export async function gerarPastaRommanel(
   };
 
   /* --- VAREJO ----------------------------------------------------- */
-  onProgress?.("Montando as colunas da aba VAREJO...", 25);
+  onProgress?.("Montando as colunas da aba VAREJO...", 15);
 
   const shopping = acharCelula(varejo!, (t) => t === "NOME DO SHOPPING");
   if (!shopping) throw new Error("Não achei a coluna 'NOME DO SHOPPING' na aba VAREJO.");
@@ -242,12 +314,32 @@ export async function gerarPastaRommanel(
     }
   }
 
-  // Modelos de estilo e conteúdo da cauda, guardados antes de apagar.
-  const estiloHeaderPeca = clonarEstilo(varejo!.getCell(headerVarejo, primeiraColunaPeca));
-  const estiloLojaPeca = clonarEstilo(varejo!.getCell(primeiraLinhaLoja, primeiraColunaPeca));
-  const estiloTotais = clonarEstilo(varejo!.getCell(linhaTotais, primeiraColunaPeca));
-  const estiloTotalGeral = clonarEstilo(varejo!.getCell(linhaTotalGeral, primeiraColunaPeca));
+  // Estilos capturados do arquivo base — UMA vez, sem clonar.
+  const baseHeaderPeca = varejo!.getCell(headerVarejo, primeiraColunaPeca).style ?? {};
+  const baseLojaPeca = varejo!.getCell(primeiraLinhaLoja, primeiraColunaPeca).style ?? {};
+  const baseTotais = varejo!.getCell(linhaTotais, primeiraColunaPeca).style ?? {};
+  const baseTotalGeral = varejo!.getCell(linhaTotalGeral, primeiraColunaPeca).style ?? {};
   const alturaHeader = varejo!.getRow(headerVarejo).height;
+
+  const ESTILO_HEADER_PECA: Partial<ExcelJS.Style> = {
+    ...baseHeaderPeca,
+    font: FONTE_12_BOLD,
+    alignment: ALINHAMENTO_CENTRO_WRAP,
+    border: BORDA_FINA,
+  };
+  const ESTILO_LOJA_PECA: Partial<ExcelJS.Style> = {
+    ...baseLojaPeca,
+    border: BORDA_FINA,
+    alignment: ALINHAMENTO_CENTRO,
+  };
+  const ESTILO_TOTAIS: Partial<ExcelJS.Style> = {
+    ...baseTotais,
+    font: { ...(baseTotais.font ?? FONTE_11), bold: true },
+  };
+  const ESTILO_TOTAL_GERAL: Partial<ExcelJS.Style> = {
+    ...baseTotalGeral,
+    font: { ...(baseTotalGeral.font ?? FONTE_11), bold: true },
+  };
 
   interface ColunaCauda {
     header: { valor: ExcelJS.CellValue; estilo: Partial<ExcelJS.Style> };
@@ -255,16 +347,17 @@ export async function gerarPastaRommanel(
     celulas: { linha: number; valor: ExcelJS.CellValue; estilo: Partial<ExcelJS.Style> }[];
   }
 
+  // Cauda guardada por referência — esses estilos só são lidos e reatribuídos.
   const cauda: ColunaCauda[] = [];
   for (let c = inicioCauda; c <= ultimaColunaUsada; c++) {
     const header = varejo!.getCell(headerVarejo, c);
     const celulas: ColunaCauda["celulas"] = [];
     for (let r = primeiraLinhaLoja; r <= linhaTotalGeral; r++) {
       const cell = varejo!.getCell(r, c);
-      celulas.push({ linha: r, valor: cell.value, estilo: clonarEstilo(cell) });
+      celulas.push({ linha: r, valor: cell.value, estilo: cell.style ?? {} });
     }
     cauda.push({
-      header: { valor: header.value, estilo: clonarEstilo(header) },
+      header: { valor: header.value, estilo: header.style ?? {} },
       largura: varejo!.getColumn(c).width,
       celulas,
     });
@@ -276,67 +369,70 @@ export async function gerarPastaRommanel(
     for (let c = primeiraColunaPeca; c <= ultimaColunaUsada; c++) {
       limparCelula(varejo!.getCell(r, c));
     }
+    if ((r - headerVarejo) % 200 === 199) await tick();
   }
 
   // Uma coluna por unidade de compra.
   const colunaDaPeca = new Map<RommanelPiece, number>();
-  unidades.forEach((p, i) => {
+  for (let i = 0; i < unidades.length; i++) {
+    const p = unidades[i];
     const c = primeiraColunaPeca + i;
     colunaDaPeca.set(p, c);
     const header = varejo!.getCell(headerVarejo, c);
     header.value = (p.nomeColunaVarejo || p.nomePeca || "").toUpperCase();
-    header.style = JSON.parse(JSON.stringify(estiloHeaderPeca));
-    header.font = { name: "Calibri", size: 12, bold: true };
-    header.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    header.border = bordaFina();
+    header.style = ESTILO_HEADER_PECA as ExcelJS.Style;
     varejo!.getColumn(c).width = Math.min(22, Math.max(13, String(header.value).length + 2));
 
     for (let r = primeiraLinhaLoja; r <= ultimaLinhaLoja; r++) {
       const cell = varejo!.getCell(r, c);
       cell.value = null;
-      cell.style = JSON.parse(JSON.stringify(estiloLojaPeca));
-      cell.border = bordaFina();
-      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.style = ESTILO_LOJA_PECA as ExcelJS.Style;
     }
-  });
+
+    onProgress?.(
+      `Escrevendo coluna ${i + 1} de ${unidades.length}...`,
+      15 + Math.round(((i + 1) / unidades.length) * 30)
+    );
+    await tick();
+  }
   if (alturaHeader) varejo!.getRow(headerVarejo).height = alturaHeader;
 
   const ultimaColunaPeca = primeiraColunaPeca + unidades.length - 1;
   relatorio.colunasVarejo = unidades.length;
 
   // Cauda de volta, logo depois da última coluna de peça.
-  cauda.forEach((col, i) => {
+  for (let i = 0; i < cauda.length; i++) {
+    const col = cauda[i];
     const destino = ultimaColunaPeca + 1 + i;
     const header = varejo!.getCell(headerVarejo, destino);
     header.value = col.header.valor;
-    header.style = JSON.parse(JSON.stringify(col.header.estilo));
+    header.style = col.header.estilo as ExcelJS.Style;
     if (col.largura) varejo!.getColumn(destino).width = col.largura;
     for (const c of col.celulas) {
       const cell = varejo!.getCell(c.linha, destino);
       cell.value = c.valor;
-      cell.style = JSON.parse(JSON.stringify(c.estilo));
+      cell.style = c.estilo as ExcelJS.Style;
     }
-  });
+    await tick();
+  }
 
   // Totais por coluna de peça.
   for (const [, c] of colunaDaPeca) {
     const col = letra(varejo!, c);
     const cell = varejo!.getCell(linhaTotais, c);
-    cell.style = JSON.parse(JSON.stringify(estiloTotais));
+    cell.style = ESTILO_TOTAIS as ExcelJS.Style;
     cell.value = { formula: `SUM(${col}${primeiraLinhaLoja}:${col}${ultimaLinhaLoja})` };
-    cell.font = { ...(cell.font ?? { name: "Calibri", size: 11 }), bold: true };
   }
 
   // Total geral mesclado ao longo das colunas de peça.
   const geral = varejo!.getCell(linhaTotalGeral, primeiraColunaPeca);
-  geral.style = JSON.parse(JSON.stringify(estiloTotalGeral));
+  geral.style = ESTILO_TOTAL_GERAL as ExcelJS.Style;
   geral.value = {
     formula: `SUM(${letra(varejo!, primeiraColunaPeca)}${linhaTotais}:${letra(
       varejo!,
       ultimaColunaPeca
     )}${linhaTotais})`,
   };
-  geral.font = { ...(geral.font ?? { name: "Calibri", size: 11 }), bold: true };
   if (ultimaColunaPeca > primeiraColunaPeca) {
     try {
       varejo!.mergeCells(linhaTotalGeral, primeiraColunaPeca, linhaTotalGeral, ultimaColunaPeca);
@@ -347,6 +443,7 @@ export async function gerarPastaRommanel(
 
   /* --- Aba da campanha -------------------------------------------- */
   onProgress?.("Escrevendo a aba da campanha...", 55);
+  await tick();
 
   const cabPeca = acharCelula(abaCampanha, (t) => t === "NOME DA PECA");
   if (!cabPeca) throw new Error("Não achei o cabeçalho 'Nome da Peça' na aba da campanha.");
@@ -403,7 +500,8 @@ export async function gerarPastaRommanel(
 
   const secoesNovas = new Set<string>();
 
-  linhas.forEach((p, i) => {
+  for (let i = 0; i < linhas.length; i++) {
+    const p = linhas[i];
     const r = inicioDados + i;
     const branco = (campo: string) => p.camposEmBranco?.includes(campo as never);
     const { cor, conhecida } = corDaSecao(p.localInstalacao);
@@ -422,13 +520,12 @@ export async function gerarPastaRommanel(
       null,
     ];
 
+    const estiloFaixa = estiloCorpoCampanha(cor.faixa);
+    const estiloFundo = estiloCorpoCampanha(cor.fundo);
     for (let c = 1; c <= 10; c++) {
       const cell = abaCampanha.getCell(r, c);
       cell.value = valores[c - 1] ?? null;
-      cell.font = { name: "Calibri", size: 11 };
-      cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-      cell.border = bordaFina();
-      cell.fill = preenchimento(c === 1 ? cor.faixa : cor.fundo);
+      cell.style = (c === 1 ? estiloFaixa : estiloFundo) as ExcelJS.Style;
     }
 
     // Quant: só na unidade de compra que não pediu Quant em branco.
@@ -443,7 +540,15 @@ export async function gerarPastaRommanel(
     }
 
     abaCampanha.getRow(r).height = (p.especificacao || "").length > 40 ? 34 : 21;
-  });
+
+    if (i % 200 === 199) {
+      onProgress?.(
+        `Escrevendo linha ${i + 1} de ${linhas.length} da campanha...`,
+        55 + Math.round(((i + 1) / linhas.length) * 15)
+      );
+      await tick();
+    }
+  }
 
   // Blocos de Local de instalação (faixa lateral) e de Kit.
   const mesclarBloco = (col: number, de: number, ate: number, valor: string) => {
@@ -465,12 +570,10 @@ export async function gerarPastaRommanel(
     let fim = i;
     while (fim + 1 < linhas.length && linhas[fim + 1].localInstalacao === local) fim++;
     const cell = mesclarBloco(1, inicioDados + i, inicioDados + fim, (local || "").toUpperCase());
-    cell.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FFFFFFFF" } };
-    cell.alignment = { horizontal: "center", vertical: "middle", textRotation: 90, wrapText: true };
-    cell.fill = preenchimento(corDaSecao(local).cor.faixa);
-    cell.border = bordaFina();
+    cell.style = estiloFaixaCampanha(corDaSecao(local).cor.faixa) as ExcelJS.Style;
     i = fim + 1;
   }
+  await tick();
 
   // Kit + especificação mesclados pelas linhas do mesmo kit (ou pela unidade de compra).
   let j = 0;
@@ -485,6 +588,7 @@ export async function gerarPastaRommanel(
     if (espBranca) abaCampanha.getCell(inicioDados + j, 6).value = null;
     j = fim + 1;
   }
+  await tick();
 
   // Fórmulas de soma do rodapé, com o intervalo novo.
   abaCampanha.getRow(novaSomaCampanha).eachCell({ includeEmpty: false }, (cell, c) => {
@@ -502,6 +606,7 @@ export async function gerarPastaRommanel(
 
   /* --- DADOS NF --------------------------------------------------- */
   onProgress?.("Escrevendo a aba DADOS NF...", 78);
+  await tick();
 
   const cabDesc = acharCelula(dadosNf!, (t) => t.startsWith("DESCRICAO"));
   if (!cabDesc) throw new Error("Não achei o cabeçalho 'Descrição' na aba DADOS NF.");
@@ -523,9 +628,17 @@ export async function gerarPastaRommanel(
   if (!somaNf) somaNf = inicioNf + 1;
 
   const antigasNf = Math.max(0, somaNf - inicioNf);
-  const modeloNf = Array.from({ length: 8 }, (_, k) =>
-    clonarEstilo(dadosNf!.getCell(inicioNf, k + 1))
-  );
+
+  // Modelo da DADOS NF: um estilo por coluna, criado uma vez.
+  const ESTILOS_NF: Partial<ExcelJS.Style>[] = Array.from({ length: 8 }, (_, k) => {
+    const base = dadosNf!.getCell(inicioNf, k + 1).style ?? {};
+    return { ...base, border: BORDA_FINA };
+  });
+  const baseDesc = ESTILOS_NF[cabDesc.col - 1] ?? {};
+  const ESTILO_NF_DESC: Partial<ExcelJS.Style> = {
+    ...baseDesc,
+    font: { ...(baseDesc.font ?? FONTE_11), bold: true },
+  };
 
   const difNf = unidades.length - antigasNf;
   if (difNf > 0) {
@@ -535,19 +648,26 @@ export async function gerarPastaRommanel(
   }
   const novaSomaNf = inicioNf + unidades.length;
 
-  unidades.forEach((p, k) => {
+  for (let k = 0; k < unidades.length; k++) {
+    const p = unidades[k];
     const r = inicioNf + k;
     for (let c = 1; c <= 8; c++) {
       const cell = dadosNf!.getCell(r, c);
       cell.value = null;
-      cell.style = JSON.parse(JSON.stringify(modeloNf[c - 1]));
-      cell.border = bordaFina();
+      cell.style = ESTILOS_NF[c - 1] as ExcelJS.Style;
     }
     const desc = dadosNf!.getCell(r, cabDesc.col);
     desc.value = `${(p.nomeColunaVarejo || p.nomePeca || "").toUpperCase()} - ${nomeCampanha}`;
-    desc.font = { ...(desc.font ?? { name: "Calibri", size: 11 }), bold: true };
-    desc.border = bordaFina();
-  });
+    desc.style = ESTILO_NF_DESC as ExcelJS.Style;
+
+    if (k % 200 === 199) {
+      onProgress?.(
+        `Escrevendo linha ${k + 1} de ${unidades.length} da DADOS NF...`,
+        78 + Math.round(((k + 1) / unidades.length) * 8)
+      );
+      await tick();
+    }
+  }
   relatorio.linhasDadosNf = unidades.length;
 
   dadosNf!.getRow(novaSomaNf).eachCell({ includeEmpty: false }, (cell, c) => {
@@ -561,6 +681,7 @@ export async function gerarPastaRommanel(
 
   /* --- Conferência ------------------------------------------------ */
   onProgress?.("Conferindo o resultado...", 90);
+  await tick();
 
   relatorio.secoesNovas = [...secoesNovas];
 
@@ -600,11 +721,13 @@ export async function gerarPastaRommanel(
     ) {
       relatorio.problemas.push(`A fórmula Quant da linha ${r} aponta para uma coluna sem cabeçalho.`);
     }
+    if ((r - inicioDados) % 200 === 199) await tick();
   }
 
   relatorio.ok = relatorio.problemas.length === 0;
 
   onProgress?.("Gerando o arquivo...", 96);
+  await tick();
   const buffer = (await wb.xlsx.writeBuffer()) as ArrayBuffer;
   onProgress?.("Pronto!", 100);
 
@@ -613,13 +736,18 @@ export async function gerarPastaRommanel(
 
 /** Dispara o download do arquivo novo (o enviado pelo usuário nunca é tocado). */
 export function baixarPastaRommanel(buffer: ArrayBuffer, nomeArquivo: string): void {
-  const blob = new Blob([buffer], {
+  let blob: Blob | null = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
-  const url = URL.createObjectURL(blob);
+  let url: string | null = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = nomeArquivo;
   a.click();
-  URL.revokeObjectURL(url);
+  // Solta a URL, o Blob e a referência do buffer para a memória voltar.
+  const paraRevogar = url;
+  url = null;
+  blob = null;
+  a.href = "";
+  setTimeout(() => URL.revokeObjectURL(paraRevogar), 0);
 }
