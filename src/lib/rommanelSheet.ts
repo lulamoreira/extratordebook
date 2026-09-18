@@ -350,6 +350,7 @@ export async function gerarPastaRommanel(
   // Onde começa o bloco de cauda (VALOR POR LOJA, PESO, ...).
   let inicioCauda = ultimaColunaUsada + 1;
   for (let c = primeiraColunaPeca; c <= ultimaColunaUsada; c++) {
+    passo();
     const t = norm(textoCelula(varejo!.getCell(headerVarejo, c)));
     if (t && CAUDA.some((k) => t.startsWith(k))) {
       inicioCauda = c;
@@ -393,6 +394,7 @@ export async function gerarPastaRommanel(
   // Cauda guardada por referência — esses estilos só são lidos e reatribuídos.
   const cauda: ColunaCauda[] = [];
   for (let c = inicioCauda; c <= ultimaColunaUsada; c++) {
+    passo();
     const header = varejo!.getCell(headerVarejo, c);
     const celulas: ColunaCauda["celulas"] = [];
     for (let r = primeiraLinhaLoja; r <= linhaTotalGeral; r++) {
@@ -410,6 +412,7 @@ export async function gerarPastaRommanel(
   desmesclar(varejo!, (m) => m.right >= primeiraColunaPeca && m.bottom >= headerVarejo);
   for (let r = headerVarejo; r <= linhaTotalGeral; r++) {
     for (let c = primeiraColunaPeca; c <= ultimaColunaUsada; c++) {
+      passo();
       limparCelula(varejo!.getCell(r, c));
     }
     if ((r - headerVarejo) % 200 === 199) await tick();
@@ -418,6 +421,7 @@ export async function gerarPastaRommanel(
   // Uma coluna por unidade de compra.
   const colunaDaPeca = new Map<RommanelPiece, number>();
   for (let i = 0; i < unidades.length; i++) {
+    passo();
     const p = unidades[i];
     const c = primeiraColunaPeca + i;
     colunaDaPeca.set(p, c);
@@ -539,6 +543,7 @@ export async function gerarPastaRommanel(
   const secoesNovas = new Set<string>();
 
   for (let i = 0; i < linhas.length; i++) {
+    passo();
     const p = linhas[i];
     const r = inicioDados + i;
     const branco = (campo: string) => p.camposEmBranco?.includes(campo as never);
@@ -604,9 +609,13 @@ export async function gerarPastaRommanel(
 
   let i = 0;
   while (i < linhas.length) {
+    passo();
     const local = linhas[i].localInstalacao;
     let fim = i;
-    while (fim + 1 < linhas.length && linhas[fim + 1].localInstalacao === local) fim++;
+    while (fim + 1 < linhas.length && linhas[fim + 1].localInstalacao === local) {
+      passo();
+      fim++;
+    }
     const cell = mesclarBloco(1, inicioDados + i, inicioDados + fim, (local || "").toUpperCase());
     cell.style = estiloFaixaCampanha(corDaSecao(local).cor.faixa) as ExcelJS.Style;
     i = fim + 1;
@@ -616,9 +625,13 @@ export async function gerarPastaRommanel(
   // Kit + especificação mesclados pelas linhas do mesmo kit (ou pela unidade de compra).
   let j = 0;
   while (j < linhas.length) {
+    passo();
     let fim = j;
     if (linhas[j].kit) {
-      while (fim + 1 < linhas.length && linhas[fim + 1].kit === linhas[j].kit) fim++;
+      while (fim + 1 < linhas.length && linhas[fim + 1].kit === linhas[j].kit) {
+        passo();
+        fim++;
+      }
       mesclarBloco(2, inicioDados + j, inicioDados + fim, linhas[j].kit.toUpperCase());
     }
     const espBranca = linhas[j].camposEmBranco?.includes("especificacao");
@@ -693,6 +706,7 @@ export async function gerarPastaRommanel(
   const novaSomaNf = inicioNf + unidades.length;
 
   for (let k = 0; k < unidades.length; k++) {
+    passo();
     const p = unidades[k];
     const r = inicioNf + k;
     for (let c = 1; c <= 8; c++) {
@@ -755,6 +769,7 @@ export async function gerarPastaRommanel(
 
   // Toda fórmula =VAREJO! precisa apontar para uma coluna com cabeçalho.
   for (let r = inicioDados; r <= ultimaLinhaDados; r++) {
+    passo();
     const f = (abaCampanha.getCell(r, 7).value as { formula?: string } | null)?.formula;
     if (!f || !f.toUpperCase().includes("VAREJO!")) continue;
     const ref = f.match(/VAREJO!\$?([A-Z]+)\$?(\d+)/i);
