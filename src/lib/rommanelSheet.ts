@@ -292,8 +292,11 @@ export async function gerarPastaRommanel(
   const razao = acharCelula(varejo!, (t) => t.includes("RAZAO SOCIAL"));
   const colRazao = razao?.col ?? 2;
 
+  // Limite lido UMA vez: getCell() materializa linhas e faria rowCount crescer sem parar.
   let ultimaLinhaLoja = primeiraLinhaLoja;
-  for (let r = primeiraLinhaLoja; r <= varejo!.rowCount; r++) {
+  const limiteLojas = Math.min(varejo!.rowCount, primeiraLinhaLoja + MAX_VARREDURA);
+  for (let r = primeiraLinhaLoja; r <= limiteLojas; r++) {
+    passo();
     if (textoCelula(varejo!.getCell(r, colRazao)).trim() !== "") ultimaLinhaLoja = r;
   }
   const linhaTotais = ultimaLinhaLoja + 1;
