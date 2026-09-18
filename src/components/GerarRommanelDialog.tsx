@@ -45,6 +45,11 @@ const Relatorio = ({ r }: { r: RelatorioRommanel }) => (
     <p>{r.colunasVarejo} colunas de peça na VAREJO</p>
     <p>{r.formulasQuant} fórmulas Quant na aba da campanha</p>
     <p>{r.linhasDadosNf} linhas na DADOS NF</p>
+    {r.caminhos.map((c) => (
+      <p key={c} className="text-muted-foreground">
+        {c}
+      </p>
+    ))}
     {r.quantEmBranco.length > 0 && (
       <p className="text-muted-foreground">
         Sem fórmula Quant, por sua escolha: {r.quantEmBranco.join(", ")}
