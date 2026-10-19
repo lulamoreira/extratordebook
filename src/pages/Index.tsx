@@ -19,6 +19,16 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2 } from "lucide-react";
 import ClienteMark from "@/components/ClienteMark";
 import {
@@ -46,6 +56,24 @@ const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Remove acentos, caixa e separadores para comparar nomes de arquivo com nomes de clientes. */
+const normalizarTexto = (texto: string): string =>
+  texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+/** Devolve o cliente citado no nome do arquivo, ou null se nenhum aparecer. */
+const clienteNoNomeDoArquivo = (fileName: string): ClienteId | null => {
+  const nome = normalizarTexto(fileName);
+  if (!nome) return null;
+  for (const c of LISTA_CLIENTES) {
+    if (nome.includes(normalizarTexto(c.nome))) return c.id;
+  }
+  return null;
+};
 
 const getErrorDiagnosis = (errorMsg: string): string => {
   const msg = errorMsg.toLowerCase();
@@ -96,6 +124,7 @@ const Index = () => {
   const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
   const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
+  const [conflitoCliente, setConflitoCliente] = useState<{ file: File; clienteDoArquivo: ClienteId } | null>(null);
 
   // Reabre no último cliente usado.
   useEffect(() => {
@@ -149,8 +178,9 @@ const Index = () => {
     throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
   };
 
-  const processFile = useCallback(async (file: File) => {
-    if (!getCliente(cliente).extracaoPronta) {
+  const processFile = useCallback(async (file: File, clienteOverride?: ClienteId) => {
+    const clienteEfetivo = clienteOverride ?? cliente;
+    if (!getCliente(clienteEfetivo).extracaoPronta) {
       toast.error("A extração deste cliente ainda não está disponível.");
       return;
     }
@@ -170,7 +200,7 @@ const Index = () => {
     setProgress(2);
 
     // Fluxo paralelo da Rommanel — partes em série, para não perder a seção.
-    if (cliente === "rommanel") {
+    if (clienteEfetivo === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
         const { pieces: linhas, errors, totalPages } = await extrairBookRommanel(file, (p) => {
@@ -229,7 +259,7 @@ const Index = () => {
       setProcessingFiles(fileStatuses);
 
       // Regras de leitura aprendidas com o usuário (alvo 'extracao'/'ambos').
-      const extractionRules = await carregarRegras(cliente, "extracao");
+      const extractionRules = await carregarRegras(clienteEfetivo, "extracao");
 
       let allPieces: Piece[] = [];
       let successCount = 0;
@@ -318,7 +348,7 @@ const Index = () => {
 
       if (successCount > 0 || partErrors.length > 0) {
         try {
-          const entry = await saveToHistory(file.name, finalPieces, partErrors, cliente);
+          const entry = await saveToHistory(file.name, finalPieces, partErrors, clienteEfetivo);
           setCurrentEntryId(entry.id);
           setHistoryRefreshKey((prev) => prev + 1);
           if (successCount > 0) {
@@ -340,22 +370,48 @@ const Index = () => {
     }
   }, [cliente]);
 
+  /** Blindagem: se o nome do arquivo citar outro cliente, abre o diálogo antes de gastar IA. */
+  const receberArquivo = useCallback((file: File) => {
+    const citado = clienteNoNomeDoArquivo(file.name);
+    if (citado && citado !== cliente) {
+      setConflitoCliente({ file, clienteDoArquivo: citado });
+      return;
+    }
+    processFile(file);
+  }, [cliente, processFile]);
+
+  const resolverConflitoTrocando = useCallback(() => {
+    if (!conflitoCliente) return;
+    const { file, clienteDoArquivo } = conflitoCliente;
+    setConflitoCliente(null);
+    setCliente(clienteDoArquivo);
+    salvarClienteSelecionado(clienteDoArquivo);
+    processFile(file, clienteDoArquivo);
+  }, [conflitoCliente, processFile]);
+
+  const resolverConflitoMantendo = useCallback(() => {
+    if (!conflitoCliente) return;
+    const { file } = conflitoCliente;
+    setConflitoCliente(null);
+    processFile(file);
+  }, [conflitoCliente, processFile]);
+
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    await processFile(file);
+    receberArquivo(file);
     e.target.value = "";
-  }, [processFile]);
+  }, [receberArquivo]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      processFile(file);
+      receberArquivo(file);
     }
-  }, [processFile]);
+  }, [receberArquivo]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -550,6 +606,12 @@ const Index = () => {
                 </div>
               ) : (
                 <>
+                  <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                    <ClienteMark cliente={cliente} size={20} />
+                    <span className="text-sm font-semibold text-foreground">
+                      Extraindo como {clienteAtual.nome.toUpperCase()}
+                    </span>
+                  </div>
                   <div className="rounded-full bg-muted p-4">
                     <Upload className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -597,6 +659,12 @@ const Index = () => {
           <Card className="mb-8">
             <CardContent className="py-8">
               <div className="flex flex-col gap-4 items-center">
+                <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                  <ClienteMark cliente={cliente} size={20} />
+                  <span className="text-sm font-semibold text-foreground">
+                    Extraindo como {clienteAtual.nome.toUpperCase()}
+                  </span>
+                </div>
                 <div className="animate-pulse text-primary font-medium">
                   Extraindo peças...
                 </div>
@@ -629,7 +697,10 @@ const Index = () => {
           <>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground">
+                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <ClienteMark cliente={cliente} size={20} />
+                  <span className="font-bold">{clienteAtual.nome}</span>
+                  <span className="text-muted-foreground">—</span>
                   {fileName && <span className="text-muted-foreground">{fileName} — </span>}
                   {pieces.length} peças extraídas
                 </p>
@@ -829,6 +900,30 @@ const Index = () => {
         extractionId={currentEntryId}
         cliente={cliente}
       />
+
+      {/* Blindagem: nome do arquivo cita um cliente diferente do selecionado */}
+      <AlertDialog open={conflitoCliente !== null} onOpenChange={(aberto) => !aberto && setConflitoCliente(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {conflitoCliente && <ClienteMark cliente={conflitoCliente.clienteDoArquivo} size={24} />}
+              Esse book parece ser da {conflitoCliente ? getCliente(conflitoCliente.clienteDoArquivo).nome : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está com {clienteAtual.nome} selecionado. Extrair com o cliente errado usa o
+              vocabulário de especificação errado e o aprendizado errado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={resolverConflitoMantendo}>
+              Continuar com {clienteAtual.nome}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={resolverConflitoTrocando}>
+              Trocar para {conflitoCliente ? getCliente(conflitoCliente.clienteDoArquivo).nome : ""} e extrair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
