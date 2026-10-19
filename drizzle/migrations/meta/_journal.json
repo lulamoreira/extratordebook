@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792430729483,
+      "tag": "0000_add_montreal_cliente_e_semeado",
+      "breakpoints": true
+    }
+  ]
+}

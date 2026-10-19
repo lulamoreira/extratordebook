@@ -106,6 +106,7 @@ export type Database = {
           nome: string
           origem: string
           pag_book: number | null
+          semeado: boolean
           tipo: string
           updated_at: string
           user_id: string
@@ -126,6 +127,7 @@ export type Database = {
           nome?: string
           origem?: string
           pag_book?: number | null
+          semeado?: boolean
           tipo?: string
           updated_at?: string
           user_id?: string
@@ -146,6 +148,7 @@ export type Database = {
           nome?: string
           origem?: string
           pag_book?: number | null
+          semeado?: boolean
           tipo?: string
           updated_at?: string
           user_id?: string
