@@ -121,22 +121,26 @@ const Index = () => {
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
   const [teachOpen, setTeachOpen] = useState(false);
-  const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
+  // Nenhum cliente pré-selecionado: a escolha é sempre um clique consciente.
+  const [cliente, setCliente] = useState<ClienteId | null>(null);
+  const [ultimoUsado, setUltimoUsado] = useState<ClienteId | null>(null);
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
   const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
   const [conflitoCliente, setConflitoCliente] = useState<{ file: File; clienteDoArquivo: ClienteId } | null>(null);
 
-  // Reabre no último cliente usado.
+  // Apenas para o rótulo "último usado" — nunca pré-seleciona.
   useEffect(() => {
-    setCliente(lerClienteSalvo());
+    setUltimoUsado(lerUltimoClienteUsado());
   }, []);
 
+  // getCliente cai no padrão apenas como segurança de dados — nunca aparece como seleção.
   const clienteAtual = getCliente(cliente);
-  const extracaoLiberada = clienteAtual.extracaoPronta;
+  const extracaoLiberada = cliente !== null && clienteAtual.extracaoPronta;
 
   const escolherCliente = (id: ClienteId) => {
     if (isExtracting) return;
     setCliente(id);
+    setUltimoUsado(id);
     salvarClienteSelecionado(id);
   };
 
