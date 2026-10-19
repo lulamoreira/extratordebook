@@ -42,11 +42,14 @@ const pageValue = (row: NaturaRow): number => {
 
 /**
  * Builds and downloads the official Natura production spreadsheet layout.
+ * `rotuloCliente` só muda o sufixo do arquivo baixado — o layout é idêntico
+ * para todos os clientes que usam este motor.
  */
 export async function gerarPlanilhaNatura(
   rows: NaturaRow[],
   titulo: string,
-  nomeArquivo: string
+  nomeArquivo: string,
+  rotuloCliente = "NATURA"
 ): Promise<void> {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("GERAL_", {
@@ -208,7 +211,11 @@ export async function gerarPlanilhaNatura(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${nomeArquivo}_PADRAO_NATURA.xlsx`;
+  const rotulo = (rotuloCliente || "NATURA")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+  a.download = `${nomeArquivo}_PADRAO_${rotulo}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

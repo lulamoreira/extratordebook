@@ -89,7 +89,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      await exportarPlanilhaNatura(pieces, entryLabel(entry), entry.id);
+      await exportarPlanilhaNatura(pieces, entryLabel(entry), entry.id, entry.cliente);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível gerar a planilha padrão Natura.");
@@ -280,7 +280,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       title={
                         getCliente(entry.cliente).planilhaPronta
                           ? `Gerar Planilha Padrão ${getCliente(entry.cliente).nome}`
-                          : "A planilha da Rommanel entra em uma próxima etapa."
+                          : `A planilha da ${getCliente(entry.cliente).nome} entra em uma próxima etapa.`
                       }
                     >
                       {busyId === entry.id ? (

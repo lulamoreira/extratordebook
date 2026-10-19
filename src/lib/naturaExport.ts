@@ -1,5 +1,6 @@
 import { type Piece } from "@/data/extractedPieces";
 import { supabase } from "@/integrations/supabase/client";
+import { getCliente, type ClienteId } from "@/lib/clientes";
 import { gerarPlanilhaNatura, type NaturaRow } from "@/lib/naturaSheet";
 import { saveNaturaRows } from "@/lib/historyStorage";
 import {
@@ -34,13 +35,19 @@ const fallbackRow = (p: Piece): NaturaRow => ({
 interface AiPayload {
   examples: { item: string; nome: string; grupo: string; formato: string; especificacao: string }[];
   rules: string[];
+  cliente: ClienteId;
 }
 
 async function formatBatch(batch: Piece[], learning: AiPayload): Promise<NaturaRow[] | null> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const { data, error } = await supabase.functions.invoke("format-natura", {
-        body: { pieces: batch, examples: learning.examples, rules: learning.rules },
+        body: {
+          pieces: batch,
+          examples: learning.examples,
+          rules: learning.rules,
+          cliente: learning.cliente,
+        },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
@@ -112,7 +119,8 @@ const rowFromExample = (p: Piece, ex: SpecExample): NaturaRow => ({
 export async function exportarPlanilhaNatura(
   pieces: Piece[],
   baseName: string,
-  extractionId?: string | null
+  extractionId?: string | null,
+  cliente: ClienteId = "natura"
 ): Promise<void> {
   if (!pieces || pieces.length === 0) {
     toast.error("Nenhuma peça para exportar");
@@ -123,7 +131,7 @@ export async function exportarPlanilhaNatura(
   let exemplos: SpecExample[] = [];
   let regras: string[] = [];
   try {
-    const aprendizado = await carregarAprendizado("natura");
+    const aprendizado = await carregarAprendizado(cliente);
     exemplos = aprendizado.exemplos;
     regras = aprendizado.regras
       .filter((r) => r.alvo === "redacao" || r.alvo === "ambos")
@@ -134,8 +142,12 @@ export async function exportarPlanilhaNatura(
     console.warn("Não foi possível carregar o aprendizado — seguindo sem ele.", err);
   }
 
+  // Linhas semeadas de outro cliente servem só de exemplo de estilo para a IA —
+  // NUNCA disparam reuso literal (senão uma peça de nome igual herdaria a
+  // especificação do outro cliente em silêncio).
   const porChave = new Map<string, SpecExample>();
   for (const ex of exemplos) {
+    if (ex.semeado) continue;
     if (!porChave.has(ex.chave)) porChave.set(ex.chave, ex);
   }
 
@@ -183,6 +195,7 @@ export async function exportarPlanilhaNatura(
               especificacao: ex.especificacaoCorreta.slice(0, EXAMPLE_SPEC_LIMIT),
             })),
             rules: regras,
+            cliente,
           }
         );
       })
@@ -205,7 +218,7 @@ export async function exportarPlanilhaNatura(
   const finalOrdered = herdarGrupos(rows);
 
   const titulo = (baseName || "EXTRAÇÃO").toUpperCase();
-  await gerarPlanilhaNatura(finalOrdered, titulo, titulo);
+  await gerarPlanilhaNatura(finalOrdered, titulo, titulo, getCliente(cliente).nome);
 
   // 5. Guarda o que foi gerado, para permitir aprendizado por comparação depois.
   if (extractionId) {

@@ -2,8 +2,15 @@
  * Fonte única de verdade dos clientes atendidos pelo app.
  * As flags controlam o que já está disponível — quando a extração/planilha
  * de um cliente ficar pronta, basta virar a flag e a interface se ajusta.
+ *
+ * motorPlanilha decide qual gerador de planilha e qual diálogo abrir;
+ * vocabulario decide qual conjunto de frases de especificação a IA usa.
+ * Novos clientes entram por configuração aqui, nunca por if no nome.
  */
-export type ClienteId = "natura" | "rommanel";
+export type ClienteId = "natura" | "rommanel" | "montreal";
+
+export type MotorPlanilha = "natura" | "rommanel";
+export type Vocabulario = "natura" | "rommanel";
 
 export interface Cliente {
   id: ClienteId;
@@ -11,6 +18,8 @@ export interface Cliente {
   corPrimaria: string;
   extracaoPronta: boolean;
   planilhaPronta: boolean;
+  motorPlanilha: MotorPlanilha;
+  vocabulario: Vocabulario;
 }
 
 export const CLIENTES: Record<ClienteId, Cliente> = {
@@ -20,6 +29,8 @@ export const CLIENTES: Record<ClienteId, Cliente> = {
     corPrimaria: "#F07300",
     extracaoPronta: true,
     planilhaPronta: true,
+    motorPlanilha: "natura",
+    vocabulario: "natura",
   },
   rommanel: {
     id: "rommanel",
@@ -27,15 +38,26 @@ export const CLIENTES: Record<ClienteId, Cliente> = {
     corPrimaria: "#4B2E5A",
     extracaoPronta: true,
     planilhaPronta: true,
+    motorPlanilha: "rommanel",
+    vocabulario: "rommanel",
+  },
+  montreal: {
+    id: "montreal",
+    nome: "Montreal",
+    corPrimaria: "#1F3A5F",
+    extracaoPronta: true,
+    planilhaPronta: true,
+    motorPlanilha: "natura",
+    vocabulario: "rommanel",
   },
 };
 
 export const CLIENTE_PADRAO: ClienteId = "natura";
 
-export const LISTA_CLIENTES: Cliente[] = [CLIENTES.natura, CLIENTES.rommanel];
+export const LISTA_CLIENTES: Cliente[] = [CLIENTES.natura, CLIENTES.rommanel, CLIENTES.montreal];
 
 const isClienteId = (id: unknown): id is ClienteId =>
-  id === "natura" || id === "rommanel";
+  id === "natura" || id === "rommanel" || id === "montreal";
 
 /** Devolve sempre um cliente válido — cai no padrão quando o id é desconhecido. */
 export function getCliente(id: unknown): Cliente {

@@ -114,7 +114,7 @@ const Index = () => {
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
     try {
-      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId);
+      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId, cliente);
     } finally {
       setIsGeneratingNatura(false);
     }
@@ -544,8 +544,8 @@ const Index = () => {
                     Ainda não disponível para {clienteAtual.nome}
                   </p>
                   <p className="max-w-md text-sm text-muted-foreground">
-                    A extração de books da Rommanel entra na próxima etapa. Por enquanto, selecione
-                    Natura para extrair.
+                    A extração de books da {clienteAtual.nome} entra na próxima etapa. Por enquanto,
+                    selecione outro cliente para extrair.
                   </p>
                 </div>
               ) : (
@@ -677,7 +677,7 @@ const Index = () => {
                   title={
                     clienteAtual.planilhaPronta
                       ? `Gerar Planilha Padrão ${clienteAtual.nome}`
-                      : "A planilha da Rommanel entra em uma próxima etapa."
+                      : `A planilha da ${clienteAtual.nome} entra em uma próxima etapa.`
                   }
                 >
                   {isGeneratingNatura ? (
