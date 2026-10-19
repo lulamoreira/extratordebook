@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import type { ClienteId } from "@/lib/clientes";
+import { getCliente, type ClienteId } from "@/lib/clientes";
 import { getNaturaRows } from "@/lib/historyStorage";
 import type { NaturaRow } from "@/lib/naturaSheet";
 import { aprenderDoBook } from "@/lib/bookLearning";
@@ -43,7 +43,7 @@ export interface TeachDialogProps {
   cliente: ClienteId;
   /** Só permite o modo gabarito (usado na página de aprendizado). */
   somenteGabarito?: boolean;
-  /** Gera a Planilha Padrão Natura da extração vinculada (mesma ação do histórico). */
+  /** Gera a Planilha Padrão do cliente da extração vinculada (mesma ação do histórico). */
   onGenerateNatura?: () => Promise<void>;
   onLearned?: () => void;
 }
@@ -237,7 +237,7 @@ export const TeachDialog = ({
                       <span className="block text-sm font-semibold text-foreground">{m.titulo}</span>
                       <span className="block text-xs text-muted-foreground">
                         {desabilitado
-                          ? "Indisponível: gere a Planilha Padrão Natura desta extração primeiro."
+                          ? `Indisponível: gere a Planilha Padrão ${getCliente(cliente).nome} desta extração primeiro.`
                           : m.descricao}
                       </span>
                       {desabilitado && onGenerateNatura && (

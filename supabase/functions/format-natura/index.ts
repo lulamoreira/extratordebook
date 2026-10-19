@@ -101,7 +101,7 @@ serve(async (req) => {
   }
 
   try {
-    const { pieces, examples, rules } = await req.json();
+    const { pieces, examples, rules, cliente } = await req.json();
 
     if (!Array.isArray(pieces) || pieces.length === 0) {
       return new Response(JSON.stringify({ error: "pieces is required" }), {
@@ -115,7 +115,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log(`Formatting ${pieces.length} pieces`);
+    console.log(`Formatting ${pieces.length} pieces (cliente: ${cliente || "natura"})`);
 
     // Aprendizado do cliente: regras e especificações aprovadas têm prioridade máxima.
     const ruleList: string[] = Array.isArray(rules)
@@ -157,7 +157,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: montarSystemPrompt(cliente) },
           {
             role: "user",
             content: `${learningBlock}Padronize estas ${pieces.length} peças (uma linha de saída por peça, mesma ordem):\n\n${JSON.stringify(pieces)}`,

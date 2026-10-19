@@ -89,7 +89,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      await exportarPlanilhaNatura(pieces, entryLabel(entry), entry.id);
+      await exportarPlanilhaNatura(pieces, entryLabel(entry), entry.id, entry.cliente);
     } catch (err) {
       console.error(err);
       toast.error("Não foi possível gerar a planilha padrão Natura.");

@@ -114,7 +114,7 @@ const Index = () => {
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
     try {
-      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId);
+      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId, cliente);
     } finally {
       setIsGeneratingNatura(false);
     }
