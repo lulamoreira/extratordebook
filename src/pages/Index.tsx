@@ -35,7 +35,7 @@ import {
   CLIENTE_PADRAO,
   LISTA_CLIENTES,
   getCliente,
-  lerClienteSalvo,
+  lerUltimoClienteUsado,
   salvarClienteSelecionado,
   type ClienteId,
 } from "@/lib/clientes";
@@ -121,29 +121,33 @@ const Index = () => {
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [isGeneratingNatura, setIsGeneratingNatura] = useState(false);
   const [teachOpen, setTeachOpen] = useState(false);
-  const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
+  // Nenhum cliente pré-selecionado: a escolha é sempre um clique consciente.
+  const [cliente, setCliente] = useState<ClienteId | null>(null);
+  const [ultimoUsado, setUltimoUsado] = useState<ClienteId | null>(null);
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
   const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
   const [conflitoCliente, setConflitoCliente] = useState<{ file: File; clienteDoArquivo: ClienteId } | null>(null);
 
-  // Reabre no último cliente usado.
+  // Apenas para o rótulo "último usado" — nunca pré-seleciona.
   useEffect(() => {
-    setCliente(lerClienteSalvo());
+    setUltimoUsado(lerUltimoClienteUsado());
   }, []);
 
+  // getCliente cai no padrão apenas como segurança de dados — nunca aparece como seleção.
   const clienteAtual = getCliente(cliente);
-  const extracaoLiberada = clienteAtual.extracaoPronta;
+  const extracaoLiberada = cliente !== null && clienteAtual.extracaoPronta;
 
   const escolherCliente = (id: ClienteId) => {
     if (isExtracting) return;
     setCliente(id);
+    setUltimoUsado(id);
     salvarClienteSelecionado(id);
   };
 
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
     try {
-      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId, cliente);
+      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId, cliente ?? CLIENTE_PADRAO);
     } finally {
       setIsGeneratingNatura(false);
     }
@@ -180,6 +184,7 @@ const Index = () => {
 
   const processFile = useCallback(async (file: File, clienteOverride?: ClienteId) => {
     const clienteEfetivo = clienteOverride ?? cliente;
+    if (!clienteEfetivo) return; // sem escolha explícita, nada é processado
     if (!getCliente(clienteEfetivo).extracaoPronta) {
       toast.error("A extração deste cliente ainda não está disponível.");
       return;
@@ -372,6 +377,7 @@ const Index = () => {
 
   /** Blindagem: se o nome do arquivo citar outro cliente, abre o diálogo antes de gastar IA. */
   const receberArquivo = useCallback((file: File) => {
+    if (!cliente) return; // sem cliente escolhido, arrastar/soltar não faz nada
     const citado = clienteNoNomeDoArquivo(file.name);
     if (citado && citado !== cliente) {
       setConflitoCliente({ file, clienteDoArquivo: citado });
@@ -554,10 +560,15 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Seletor de cliente */}
+        {/* Seletor de cliente — único elemento acionável até haver escolha */}
         <div className="mb-6">
           <p className="mb-2 text-sm font-semibold text-foreground">Cliente</p>
-          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-3 sm:max-w-md rounded-2xl",
+              cliente === null && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background p-1 -m-1"
+            )}
+          >
             {LISTA_CLIENTES.map((c) => (
               <button
                 key={c.id}
@@ -566,12 +577,17 @@ const Index = () => {
                 disabled={isExtracting}
                 aria-pressed={cliente === c.id}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
+                  "relative flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
                   cliente === c.id && "ring-2 ring-primary"
                 )}
               >
                 <ClienteMark cliente={c.id} size={40} />
                 <span className="text-sm font-bold text-foreground">{c.nome}</span>
+                {ultimoUsado === c.id && cliente !== c.id && (
+                  <span className="absolute right-2 top-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    último usado
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -580,8 +596,21 @@ const Index = () => {
         {/* History */}
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
-        {/* Upload Area */}
-        {pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
+        {/* Sem escolha de cliente: bloco calmo no lugar do upload */}
+        {cliente === null && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
+          <Card className="mb-8">
+            <CardContent className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+              <p className="text-lg font-medium text-foreground">Escolha o cliente para começar</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                O cliente define o vocabulário de especificação, o formato da planilha e o
+                aprendizado usado na extração.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upload Area — só existe depois da escolha explícita do cliente */}
+        {cliente !== null && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
           <Card 
             className={`mb-8 border-dashed border-2 transition-colors ${
               isDragging && extracaoLiberada
@@ -609,7 +638,7 @@ const Index = () => {
                   <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
                     <ClienteMark cliente={cliente} size={20} />
                     <span className="text-sm font-semibold text-foreground">
-                      Extraindo como {clienteAtual.nome.toUpperCase()}
+                      Cliente: {clienteAtual.nome.toUpperCase()}
                     </span>
                   </div>
                   <div className="rounded-full bg-muted p-4">
@@ -659,12 +688,14 @@ const Index = () => {
           <Card className="mb-8">
             <CardContent className="py-8">
               <div className="flex flex-col gap-4 items-center">
-                <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
-                  <ClienteMark cliente={cliente} size={20} />
-                  <span className="text-sm font-semibold text-foreground">
-                    Extraindo como {clienteAtual.nome.toUpperCase()}
-                  </span>
-                </div>
+                {cliente !== null && (
+                  <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                    <ClienteMark cliente={cliente} size={20} />
+                    <span className="text-sm font-semibold text-foreground">
+                      Extraindo como {clienteAtual.nome.toUpperCase()}
+                    </span>
+                  </div>
+                )}
                 <div className="animate-pulse text-primary font-medium">
                   Extraindo peças...
                 </div>
@@ -698,7 +729,7 @@ const Index = () => {
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <ClienteMark cliente={cliente} size={20} />
+                  {cliente !== null && <ClienteMark cliente={cliente} size={20} />}
                   <span className="font-bold">{clienteAtual.nome}</span>
                   <span className="text-muted-foreground">—</span>
                   {fileName && <span className="text-muted-foreground">{fileName} — </span>}
@@ -754,7 +785,7 @@ const Index = () => {
                   {isGeneratingNatura ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <ClienteMark cliente={cliente} size={44} />
+                    <ClienteMark cliente={cliente ?? CLIENTE_PADRAO} size={44} />
                   )}
                   Gerar Planilha Padrão {clienteAtual.nome}
                 </Button>
@@ -898,7 +929,7 @@ const Index = () => {
         open={teachOpen}
         onOpenChange={setTeachOpen}
         extractionId={currentEntryId}
-        cliente={cliente}
+        cliente={cliente ?? CLIENTE_PADRAO}
       />
 
       {/* Blindagem: nome do arquivo cita um cliente diferente do selecionado */}

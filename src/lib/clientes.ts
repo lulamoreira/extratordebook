@@ -78,6 +78,16 @@ export function lerClienteSalvo(): ClienteId {
   }
 }
 
+/** Último cliente usado de fato — null quando nunca houve escolha. Não pré-seleciona nada. */
+export function lerUltimoClienteUsado(): ClienteId | null {
+  try {
+    const valor = localStorage.getItem(STORAGE_KEY);
+    return isClienteId(valor) ? valor : null;
+  } catch {
+    return null;
+  }
+}
+
 export function salvarClienteSelecionado(id: ClienteId): void {
   try {
     localStorage.setItem(STORAGE_KEY, id);
