@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Save } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import ClienteMark from "@/components/ClienteMark";
+import ResultadosActionBar from "@/components/ResultadosActionBar";
 import RommanelRevisaoRow from "@/components/RommanelRevisaoRow";
 import GerarRommanelDialog from "@/components/GerarRommanelDialog";
 import { updateHistoryPieces } from "@/lib/historyStorage";
@@ -299,15 +299,6 @@ export const RevisaoRommanel = ({
           }
         >
           Excluir todas
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1"
-          onClick={() => aplicar((atual) => [...atual, novaLinhaRommanel()])}
-        >
-          <Plus className="h-4 w-4" />
-          Adicionar linha
         </Button>
       </div>
 
