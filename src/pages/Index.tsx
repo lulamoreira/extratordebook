@@ -544,8 +544,8 @@ const Index = () => {
                     Ainda não disponível para {clienteAtual.nome}
                   </p>
                   <p className="max-w-md text-sm text-muted-foreground">
-                    A extração de books da Rommanel entra na próxima etapa. Por enquanto, selecione
-                    Natura para extrair.
+                    A extração de books da {clienteAtual.nome} entra na próxima etapa. Por enquanto,
+                    selecione outro cliente para extrair.
                   </p>
                 </div>
               ) : (
