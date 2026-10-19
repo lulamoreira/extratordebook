@@ -200,7 +200,7 @@ const Index = () => {
     setProgress(2);
 
     // Fluxo paralelo da Rommanel — partes em série, para não perder a seção.
-    if (cliente === "rommanel") {
+    if (clienteEfetivo === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
         const { pieces: linhas, errors, totalPages } = await extrairBookRommanel(file, (p) => {
@@ -259,7 +259,7 @@ const Index = () => {
       setProcessingFiles(fileStatuses);
 
       // Regras de leitura aprendidas com o usuário (alvo 'extracao'/'ambos').
-      const extractionRules = await carregarRegras(cliente, "extracao");
+      const extractionRules = await carregarRegras(clienteEfetivo, "extracao");
 
       let allPieces: Piece[] = [];
       let successCount = 0;
@@ -348,7 +348,7 @@ const Index = () => {
 
       if (successCount > 0 || partErrors.length > 0) {
         try {
-          const entry = await saveToHistory(file.name, finalPieces, partErrors, cliente);
+          const entry = await saveToHistory(file.name, finalPieces, partErrors, clienteEfetivo);
           setCurrentEntryId(entry.id);
           setHistoryRefreshKey((prev) => prev + 1);
           if (successCount > 0) {
