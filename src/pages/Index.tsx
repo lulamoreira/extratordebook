@@ -688,12 +688,14 @@ const Index = () => {
           <Card className="mb-8">
             <CardContent className="py-8">
               <div className="flex flex-col gap-4 items-center">
-                <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
-                  <ClienteMark cliente={cliente} size={20} />
-                  <span className="text-sm font-semibold text-foreground">
-                    Extraindo como {clienteAtual.nome.toUpperCase()}
-                  </span>
-                </div>
+                {cliente !== null && (
+                  <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                    <ClienteMark cliente={cliente} size={20} />
+                    <span className="text-sm font-semibold text-foreground">
+                      Extraindo como {clienteAtual.nome.toUpperCase()}
+                    </span>
+                  </div>
+                )}
                 <div className="animate-pulse text-primary font-medium">
                   Extraindo peças...
                 </div>
@@ -727,7 +729,7 @@ const Index = () => {
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <ClienteMark cliente={cliente} size={20} />
+                  {cliente !== null && <ClienteMark cliente={cliente} size={20} />}
                   <span className="font-bold">{clienteAtual.nome}</span>
                   <span className="text-muted-foreground">—</span>
                   {fileName && <span className="text-muted-foreground">{fileName} — </span>}
@@ -783,7 +785,7 @@ const Index = () => {
                   {isGeneratingNatura ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <ClienteMark cliente={cliente} size={44} />
+                    <ClienteMark cliente={cliente ?? CLIENTE_PADRAO} size={44} />
                   )}
                   Gerar Planilha Padrão {clienteAtual.nome}
                 </Button>
@@ -927,7 +929,7 @@ const Index = () => {
         open={teachOpen}
         onOpenChange={setTeachOpen}
         extractionId={currentEntryId}
-        cliente={cliente}
+        cliente={cliente ?? CLIENTE_PADRAO}
       />
 
       {/* Blindagem: nome do arquivo cita um cliente diferente do selecionado */}
