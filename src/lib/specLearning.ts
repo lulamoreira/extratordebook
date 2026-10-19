@@ -71,6 +71,11 @@ export interface SpecExample extends AprendizadoItem {
   id: string;
   updatedAt: string;
   cliente: ClienteId;
+  /**
+   * true = copiado de outro cliente como ponto de partida.
+   * Serve APENAS de exemplo de estilo para a IA — nunca dispara reuso literal.
+   */
+  semeado: boolean;
 }
 
 export interface ResultadoGravacao {
@@ -305,6 +310,7 @@ const toExample = (row: Record<string, unknown>): SpecExample => ({
   origem: (row.origem as Origem) ?? "gabarito",
   updatedAt: String(row.updated_at ?? new Date().toISOString()),
   cliente: normalizarClienteId(row.cliente),
+  semeado: row.semeado === true,
 });
 
 /** Upsert com precedência: book > planilha > gabarito; entre iguais, o novo vence. */
@@ -374,6 +380,8 @@ export async function salvarExemplos(
       especificacao_correta: item.especificacaoCorreta,
       origem: item.origem,
       extraction_id: extractionId ?? null,
+      // Ensino real do usuário: a linha passa a valer para reuso literal.
+      semeado: false,
       updated_at: new Date().toISOString(),
     });
   }
