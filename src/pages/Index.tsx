@@ -35,7 +35,7 @@ import {
   CLIENTE_PADRAO,
   LISTA_CLIENTES,
   getCliente,
-  lerClienteSalvo,
+  lerUltimoClienteUsado,
   salvarClienteSelecionado,
   type ClienteId,
 } from "@/lib/clientes";
