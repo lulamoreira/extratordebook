@@ -213,35 +213,38 @@ export const RevisaoRommanel = ({
         ))}
       </datalist>
 
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm font-medium text-foreground">
-            {fileName && <span className="text-muted-foreground">{fileName} — </span>}
-            {linhas.length} linhas de peça
-          </p>
+      <ResultadosActionBar
+        cliente="rommanel"
+        clienteNome="Rommanel"
+        titulo={fileName || "Revisão"}
+        resumo={`${linhas.length} linhas de peça`}
+        extra={
           <p className="text-xs text-muted-foreground">
             {carregando
               ? "Conferindo o que já foi aprendido..."
               : `${recorrentes} recorrentes · ${linhas.length - recorrentes} novas`}
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={salvar} disabled={salvando || !entryId} className="gap-2">
-            {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Salvar revisão
-          </Button>
-          <Button
-            className="gap-2"
-            size="sm"
-            variant="secondary"
-            onClick={() => setGerarAberto(true)}
-            title="Gera a pasta Excel a partir da campanha anterior"
-          >
-            <ClienteMark cliente="rommanel" size={44} />
-            Gerar Planilha Padrão Rommanel
-          </Button>
-        </div>
-      </div>
+        }
+        primaria={{
+          label: "Gerar Planilha Padrão Rommanel",
+          onClick: () => setGerarAberto(true),
+          title: "Gera a pasta Excel a partir da campanha anterior",
+        }}
+        secundaria={{
+          label: "Salvar revisão",
+          icon: Save,
+          onClick: salvar,
+          disabled: salvando || !entryId,
+          loading: salvando,
+        }}
+        menu={[
+          {
+            label: "Adicionar linha",
+            icon: Plus,
+            onClick: () => aplicar((atual) => [...atual, novaLinhaRommanel()]),
+          },
+        ]}
+      />
 
       {/* Ações em lote */}
       <div className="mb-3 flex flex-wrap gap-2 rounded-xl bg-muted/50 p-2">
