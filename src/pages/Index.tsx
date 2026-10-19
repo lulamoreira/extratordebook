@@ -902,6 +902,30 @@ const Index = () => {
         extractionId={currentEntryId}
         cliente={cliente}
       />
+
+      {/* Blindagem: nome do arquivo cita um cliente diferente do selecionado */}
+      <AlertDialog open={conflitoCliente !== null} onOpenChange={(aberto) => !aberto && setConflitoCliente(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {conflitoCliente && <ClienteMark cliente={conflitoCliente.clienteDoArquivo} size={24} />}
+              Esse book parece ser da {conflitoCliente ? getCliente(conflitoCliente.clienteDoArquivo).nome : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está com {clienteAtual.nome} selecionado. Extrair com o cliente errado usa o
+              vocabulário de especificação errado e o aprendizado errado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={resolverConflitoMantendo}>
+              Continuar com {clienteAtual.nome}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={resolverConflitoTrocando}>
+              Trocar para {conflitoCliente ? getCliente(conflitoCliente.clienteDoArquivo).nome : ""} e extrair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
