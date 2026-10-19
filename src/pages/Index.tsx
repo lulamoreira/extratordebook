@@ -19,6 +19,16 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2 } from "lucide-react";
 import ClienteMark from "@/components/ClienteMark";
 import {
@@ -46,6 +56,24 @@ const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Remove acentos, caixa e separadores para comparar nomes de arquivo com nomes de clientes. */
+const normalizarTexto = (texto: string): string =>
+  texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+/** Devolve o cliente citado no nome do arquivo, ou null se nenhum aparecer. */
+const clienteNoNomeDoArquivo = (fileName: string): ClienteId | null => {
+  const nome = normalizarTexto(fileName);
+  if (!nome) return null;
+  for (const c of LISTA_CLIENTES) {
+    if (nome.includes(normalizarTexto(c.nome))) return c.id;
+  }
+  return null;
+};
 
 const getErrorDiagnosis = (errorMsg: string): string => {
   const msg = errorMsg.toLowerCase();
