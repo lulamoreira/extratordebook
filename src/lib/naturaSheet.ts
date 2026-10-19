@@ -214,6 +214,7 @@ export async function gerarPlanilhaNatura(
   const rotulo = (rotuloCliente || "NATURA")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
+    // eslint-disable-line — faixa de diacríticos combinantes
     .toUpperCase();
   a.download = `${nomeArquivo}_PADRAO_${rotulo}.xlsx`;
   document.body.appendChild(a);
