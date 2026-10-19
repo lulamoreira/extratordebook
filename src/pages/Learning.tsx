@@ -53,6 +53,7 @@ const Learning = () => {
   const [aba, setAba] = useState<Tipo>("exemplo");
   const [teachOpen, setTeachOpen] = useState(false);
   const [filtro, setFiltro] = useState<FiltroCliente>("todos");
+  const [soSemeadas, setSoSemeadas] = useState(false);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -85,12 +86,13 @@ const Learning = () => {
     const termo = normalizar(busca);
     return doFiltro
       .filter((i) => i.tipo === aba)
+      .filter((i) => !soSemeadas || i.semeado)
       .filter((i) =>
         !termo
           ? true
           : normalizar(`${i.item} ${i.nome} ${i.grupo} ${i.especificacaoCorreta}`).includes(termo)
       );
-  }, [doFiltro, aba, busca]);
+  }, [doFiltro, aba, busca, soSemeadas]);
 
   const remover = async (id: string) => {
     try {
@@ -189,7 +191,7 @@ const Learning = () => {
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     {filtro === "todos"
-                      ? `Serão removidas todas as ${itens.length} especificações e regras de Natura e Rommanel. Não é possível desfazer.`
+                      ? `Serão removidas todas as ${itens.length} especificações e regras de todos os clientes. Não é possível desfazer.`
                       : `Serão removidas ${doFiltro.length} especificações e regras apenas deste cliente. O aprendizado dos outros clientes continua intacto. Não é possível desfazer.`}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -210,14 +212,25 @@ const Learning = () => {
                 <TabsTrigger value="regra">Regras</TabsTrigger>
               </TabsList>
 
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  placeholder="Buscar..."
-                  className="pl-8"
-                />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={soSemeadas ? "default" : "secondary"}
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => setSoSemeadas((v) => !v)}
+                  title="Mostra só as linhas copiadas de outro cliente como ponto de partida"
+                >
+                  Só semeadas
+                </Button>
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    placeholder="Buscar..."
+                    className="pl-8"
+                  />
+                </div>
               </div>
             </div>
 
@@ -255,6 +268,15 @@ const Learning = () => {
                           <Badge variant="secondary" className="text-[10px]">
                             {ORIGEM_LABEL[i.origem] ?? i.origem}
                           </Badge>
+                          {i.semeado && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] text-muted-foreground"
+                              title="Copiada da Rommanel como ponto de partida: serve de exemplo de estilo para a IA, mas não preenche peça automaticamente."
+                            >
+                              Semeada da Rommanel
+                            </Badge>
+                          )}
                           {i.tipo === "regra" && (
                             <Badge variant="secondary" className="text-[10px]">
                               {ALVO_LABEL[i.alvo] ?? i.alvo}
