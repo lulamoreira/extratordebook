@@ -381,22 +381,20 @@ const Index = () => {
   }, [cliente, processFile]);
 
   const resolverConflitoTrocando = useCallback(() => {
-    setConflitoCliente((atual) => {
-      if (atual) {
-        setCliente(atual.clienteDoArquivo);
-        salvarClienteSelecionado(atual.clienteDoArquivo);
-        processFile(atual.file, atual.clienteDoArquivo);
-      }
-      return null;
-    });
-  }, [processFile]);
+    if (!conflitoCliente) return;
+    const { file, clienteDoArquivo } = conflitoCliente;
+    setConflitoCliente(null);
+    setCliente(clienteDoArquivo);
+    salvarClienteSelecionado(clienteDoArquivo);
+    processFile(file, clienteDoArquivo);
+  }, [conflitoCliente, processFile]);
 
   const resolverConflitoMantendo = useCallback(() => {
-    setConflitoCliente((atual) => {
-      if (atual) processFile(atual.file);
-      return null;
-    });
-  }, [processFile]);
+    if (!conflitoCliente) return;
+    const { file } = conflitoCliente;
+    setConflitoCliente(null);
+    processFile(file);
+  }, [conflitoCliente, processFile]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
