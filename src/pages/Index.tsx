@@ -370,22 +370,50 @@ const Index = () => {
     }
   }, [cliente]);
 
+  /** Blindagem: se o nome do arquivo citar outro cliente, abre o diálogo antes de gastar IA. */
+  const receberArquivo = useCallback((file: File) => {
+    const citado = clienteNoNomeDoArquivo(file.name);
+    if (citado && citado !== cliente) {
+      setConflitoCliente({ file, clienteDoArquivo: citado });
+      return;
+    }
+    processFile(file);
+  }, [cliente, processFile]);
+
+  const resolverConflitoTrocando = useCallback(() => {
+    setConflitoCliente((atual) => {
+      if (atual) {
+        setCliente(atual.clienteDoArquivo);
+        salvarClienteSelecionado(atual.clienteDoArquivo);
+        processFile(atual.file, atual.clienteDoArquivo);
+      }
+      return null;
+    });
+  }, [processFile]);
+
+  const resolverConflitoMantendo = useCallback(() => {
+    setConflitoCliente((atual) => {
+      if (atual) processFile(atual.file);
+      return null;
+    });
+  }, [processFile]);
+
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    await processFile(file);
+    receberArquivo(file);
     e.target.value = "";
-  }, [processFile]);
+  }, [receberArquivo]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      processFile(file);
+      receberArquivo(file);
     }
-  }, [processFile]);
+  }, [receberArquivo]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
