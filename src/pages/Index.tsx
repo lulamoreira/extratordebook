@@ -124,6 +124,7 @@ const Index = () => {
   const [cliente, setCliente] = useState<ClienteId>(CLIENTE_PADRAO);
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
   const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
+  const [conflitoCliente, setConflitoCliente] = useState<{ file: File; clienteDoArquivo: ClienteId } | null>(null);
 
   // Reabre no último cliente usado.
   useEffect(() => {
@@ -177,8 +178,9 @@ const Index = () => {
     throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
   };
 
-  const processFile = useCallback(async (file: File) => {
-    if (!getCliente(cliente).extracaoPronta) {
+  const processFile = useCallback(async (file: File, clienteOverride?: ClienteId) => {
+    const clienteEfetivo = clienteOverride ?? cliente;
+    if (!getCliente(clienteEfetivo).extracaoPronta) {
       toast.error("A extração deste cliente ainda não está disponível.");
       return;
     }
