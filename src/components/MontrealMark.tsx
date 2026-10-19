@@ -1,4 +1,4 @@
-import montrealLogo from "@/assets/montreal-logo.png.asset.json";
+import montrealLogo from "@/assets/montreal-logo.png";
 
 interface Props {
   size?: number;
@@ -8,7 +8,7 @@ interface Props {
 export const MontrealMark = ({ size = 20, className = "" }: Props) => {
   return (
     <img
-      src={montrealLogo.url}
+      src={montrealLogo}
       alt="Montreal"
       draggable={false}
       className={`shrink-0 object-contain ${className}`}
