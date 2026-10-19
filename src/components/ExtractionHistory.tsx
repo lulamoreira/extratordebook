@@ -286,7 +286,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       {busyId === entry.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <ClienteMark cliente={entry.cliente} size={40} />
+                        <ClienteMark cliente={entry.cliente} size={18} />
                       )}
                     </Button>
                     {entry.cliente === "rommanel" && (

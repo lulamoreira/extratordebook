@@ -48,6 +48,7 @@ import { exportarPlanilhaNatura } from "@/lib/naturaExport";
 import { carregarRegras } from "@/lib/specLearning";
 import TeachDialog from "@/components/TeachDialog";
 import { GraduationCap } from "lucide-react";
+import ResultadosActionBar from "@/components/ResultadosActionBar";
 import { cn } from "@/lib/utils";
 
 
@@ -726,81 +727,52 @@ const Index = () => {
         {/* Results */}
         {pieces.length > 0 && (
           <>
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  {cliente !== null && <ClienteMark cliente={cliente} size={20} />}
-                  <span className="font-bold">{clienteAtual.nome}</span>
-                  <span className="text-muted-foreground">—</span>
-                  {fileName && <span className="text-muted-foreground">{fileName} — </span>}
-                  {pieces.length} peças extraídas
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <Button variant="outline" asChild className="gap-2 cursor-pointer" size="sm">
-                    <span>
-                      <Upload className="h-4 w-4" />
-                      Adicionar PDF
-                    </span>
-                  </Button>
-                </label>
-                <Button variant="outline" size="sm" onClick={addRow} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Adicionar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSaveToHistory}
-                  disabled={!currentEntryId}
-                  className="gap-2"
-                  title={currentEntryId ? "Atualizar a entrada do histórico com as peças da tela" : "Nenhuma entrada do histórico carregada"}
-                >
-                  <Save className="h-4 w-4" />
-                  Salvar alterações no histórico
-                </Button>
-                <Button onClick={handleDownload} className="gap-2" size="sm">
-                  <Download className="h-4 w-4" />
-                  Baixar Excel
-                </Button>
-                <Button
-                  onClick={handleGerarNatura}
-                  disabled={isGeneratingNatura || !clienteAtual.planilhaPronta}
-                  className="gap-2"
-                  size="sm"
-                  variant="secondary"
-                  title={
-                    clienteAtual.planilhaPronta
-                      ? `Gerar Planilha Padrão ${clienteAtual.nome}`
-                      : `A planilha da ${clienteAtual.nome} entra em uma próxima etapa.`
-                  }
-                >
-                  {isGeneratingNatura ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ClienteMark cliente={cliente ?? CLIENTE_PADRAO} size={44} />
-                  )}
-                  Gerar Planilha Padrão {clienteAtual.nome}
-                </Button>
-                <Button
-                  onClick={() => setTeachOpen(true)}
-                  className="gap-2"
-                  size="sm"
-                  variant="outline"
-                  title="Ensinar com minha planilha"
-                >
-                  <GraduationCap className="h-4 w-4 text-primary" />
-                  Ensinar com minha planilha
-                </Button>
-              </div>
-            </div>
+            <input
+              id="adicionar-pdf-input"
+              type="file"
+              accept=".pdf"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <ResultadosActionBar
+              cliente={cliente ?? CLIENTE_PADRAO}
+              clienteNome={clienteAtual.nome}
+              titulo={fileName || "Extração"}
+              resumo={`${pieces.length} peças`}
+              primaria={{
+                label: `Gerar Planilha Padrão ${clienteAtual.nome}`,
+                onClick: handleGerarNatura,
+                disabled: isGeneratingNatura || !clienteAtual.planilhaPronta,
+                loading: isGeneratingNatura,
+                title: clienteAtual.planilhaPronta
+                  ? `Gerar Planilha Padrão ${clienteAtual.nome}`
+                  : `A planilha da ${clienteAtual.nome} entra em uma próxima etapa.`,
+              }}
+              secundaria={{ label: "Baixar Excel", icon: Download, onClick: handleDownload }}
+              menu={[
+                {
+                  label: "Adicionar PDF",
+                  icon: Upload,
+                  onClick: () => document.getElementById("adicionar-pdf-input")?.click(),
+                },
+                { label: "Adicionar linha", icon: Plus, onClick: addRow },
+                {
+                  label: "Salvar alterações no histórico",
+                  icon: Save,
+                  onClick: handleSaveToHistory,
+                  disabled: !currentEntryId,
+                  title: currentEntryId
+                    ? "Atualizar a entrada do histórico com as peças da tela"
+                    : "Nenhuma entrada do histórico carregada",
+                },
+                {
+                  label: "Ensinar com minha planilha",
+                  icon: GraduationCap,
+                  onClick: () => setTeachOpen(true),
+                  separadorAntes: true,
+                },
+              ]}
+            />
 
             <div className="rounded-lg border overflow-x-auto">
               <Table>
