@@ -677,7 +677,7 @@ const Index = () => {
                   title={
                     clienteAtual.planilhaPronta
                       ? `Gerar Planilha Padrão ${clienteAtual.nome}`
-                      : "A planilha da Rommanel entra em uma próxima etapa."
+                      : `A planilha da ${clienteAtual.nome} entra em uma próxima etapa.`
                   }
                 >
                   {isGeneratingNatura ? (

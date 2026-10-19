@@ -280,7 +280,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                       title={
                         getCliente(entry.cliente).planilhaPronta
                           ? `Gerar Planilha Padrão ${getCliente(entry.cliente).nome}`
-                          : "A planilha da Rommanel entra em uma próxima etapa."
+                          : `A planilha da ${getCliente(entry.cliente).nome} entra em uma próxima etapa.`
                       }
                     >
                       {busyId === entry.id ? (
