@@ -596,8 +596,21 @@ const Index = () => {
         {/* History */}
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
-        {/* Upload Area */}
-        {pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
+        {/* Sem escolha de cliente: bloco calmo no lugar do upload */}
+        {cliente === null && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
+          <Card className="mb-8">
+            <CardContent className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+              <p className="text-lg font-medium text-foreground">Escolha o cliente para começar</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                O cliente define o vocabulário de especificação, o formato da planilha e o
+                aprendizado usado na extração.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upload Area — só existe depois da escolha explícita do cliente */}
+        {cliente !== null && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
           <Card 
             className={`mb-8 border-dashed border-2 transition-colors ${
               isDragging && extracaoLiberada
@@ -625,7 +638,7 @@ const Index = () => {
                   <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
                     <ClienteMark cliente={cliente} size={20} />
                     <span className="text-sm font-semibold text-foreground">
-                      Extraindo como {clienteAtual.nome.toUpperCase()}
+                      Cliente: {clienteAtual.nome.toUpperCase()}
                     </span>
                   </div>
                   <div className="rounded-full bg-muted p-4">
