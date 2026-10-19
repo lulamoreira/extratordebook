@@ -560,10 +560,15 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Seletor de cliente */}
+        {/* Seletor de cliente — único elemento acionável até haver escolha */}
         <div className="mb-6">
           <p className="mb-2 text-sm font-semibold text-foreground">Cliente</p>
-          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-3 sm:max-w-md rounded-2xl",
+              cliente === null && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background p-1 -m-1"
+            )}
+          >
             {LISTA_CLIENTES.map((c) => (
               <button
                 key={c.id}
@@ -572,12 +577,17 @@ const Index = () => {
                 disabled={isExtracting}
                 aria-pressed={cliente === c.id}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
+                  "relative flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
                   cliente === c.id && "ring-2 ring-primary"
                 )}
               >
                 <ClienteMark cliente={c.id} size={40} />
                 <span className="text-sm font-bold text-foreground">{c.nome}</span>
+                {ultimoUsado === c.id && cliente !== c.id && (
+                  <span className="absolute right-2 top-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    último usado
+                  </span>
+                )}
               </button>
             ))}
           </div>
