@@ -147,7 +147,7 @@ const Index = () => {
   const handleGerarNatura = async () => {
     setIsGeneratingNatura(true);
     try {
-      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId, cliente);
+      await exportarPlanilhaNatura(pieces, fileName.replace(/\.pdf$/i, ""), currentEntryId, cliente ?? CLIENTE_PADRAO);
     } finally {
       setIsGeneratingNatura(false);
     }
@@ -184,6 +184,7 @@ const Index = () => {
 
   const processFile = useCallback(async (file: File, clienteOverride?: ClienteId) => {
     const clienteEfetivo = clienteOverride ?? cliente;
+    if (!clienteEfetivo) return; // sem escolha explícita, nada é processado
     if (!getCliente(clienteEfetivo).extracaoPronta) {
       toast.error("A extração deste cliente ainda não está disponível.");
       return;
@@ -376,6 +377,7 @@ const Index = () => {
 
   /** Blindagem: se o nome do arquivo citar outro cliente, abre o diálogo antes de gastar IA. */
   const receberArquivo = useCallback((file: File) => {
+    if (!cliente) return; // sem cliente escolhido, arrastar/soltar não faz nada
     const citado = clienteNoNomeDoArquivo(file.name);
     if (citado && citado !== cliente) {
       setConflitoCliente({ file, clienteDoArquivo: citado });
