@@ -608,6 +608,12 @@ const Index = () => {
                 </div>
               ) : (
                 <>
+                  <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                    <ClienteMark cliente={cliente} size={20} />
+                    <span className="text-sm font-semibold text-foreground">
+                      Extraindo como {clienteAtual.nome.toUpperCase()}
+                    </span>
+                  </div>
                   <div className="rounded-full bg-muted p-4">
                     <Upload className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -655,6 +661,12 @@ const Index = () => {
           <Card className="mb-8">
             <CardContent className="py-8">
               <div className="flex flex-col gap-4 items-center">
+                <div className="flex items-center gap-2 rounded-full bg-muted px-4 py-1.5">
+                  <ClienteMark cliente={cliente} size={20} />
+                  <span className="text-sm font-semibold text-foreground">
+                    Extraindo como {clienteAtual.nome.toUpperCase()}
+                  </span>
+                </div>
                 <div className="animate-pulse text-primary font-medium">
                   Extraindo peças...
                 </div>
@@ -687,7 +699,10 @@ const Index = () => {
           <>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground">
+                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <ClienteMark cliente={cliente} size={20} />
+                  <span className="font-bold">{clienteAtual.nome}</span>
+                  <span className="text-muted-foreground">—</span>
                   {fileName && <span className="text-muted-foreground">{fileName} — </span>}
                   {pieces.length} peças extraídas
                 </p>
