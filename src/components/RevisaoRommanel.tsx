@@ -453,7 +453,7 @@ export const RevisaoRommanel = ({
               );
             })}
           </TableBody>
-        </Table>
+        </table>
       </div>
 
       {/* Barra fixa: avisos compactos + placar legível */}
