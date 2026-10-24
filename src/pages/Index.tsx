@@ -551,23 +551,18 @@ const Index = () => {
       <AppHeader onGoHome={handleGoHome} busy={isExtracting} />
 
       <div className="mx-auto max-w-7xl p-4 md:p-8">
-        {/* Page intro */}
+        {/* Título único da página */}
         <div className="mb-8">
-          <h1 className="text-2xl font-extrabold text-foreground">
-            Extrator de Peças — Books de Campanha
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Envie um PDF de book de campanha para extrair automaticamente todas as peças gráficas
-          </p>
+          <h1 className="text-2xl font-extrabold text-foreground">Extrair peças de um book</h1>
         </div>
 
-        {/* Seletor de cliente — único elemento acionável até haver escolha */}
-        <div className="mb-6">
-          <p className="mb-2 text-sm font-semibold text-foreground">Cliente</p>
+        {/* Seletor de cliente em uma linha — único elemento acionável até haver escolha */}
+        <div className="mb-8">
+          <p className="mb-3 text-xs text-muted-foreground">Cliente</p>
           <div
             className={cn(
-              "grid grid-cols-2 gap-3 sm:max-w-md rounded-2xl",
-              cliente === null && "ring-2 ring-primary/40 ring-offset-2 ring-offset-background p-1 -m-1"
+              "flex max-w-[640px] gap-3 overflow-x-auto rounded-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+              cliente === null && "p-1 -m-1 ring-2 ring-primary/40 ring-offset-2 ring-offset-background"
             )}
           >
             {LISTA_CLIENTES.map((c) => (
@@ -578,14 +573,14 @@ const Index = () => {
                 disabled={isExtracting}
                 aria-pressed={cliente === c.id}
                 className={cn(
-                  "relative flex items-center gap-3 rounded-xl bg-card p-3 text-left shadow-soft transition-colors hover:bg-muted disabled:opacity-60",
-                  cliente === c.id && "ring-2 ring-primary"
+                  "relative flex h-14 min-w-0 flex-1 items-center gap-3 rounded-xl border bg-card px-3 text-left shadow-soft transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60",
+                  cliente === c.id ? "border-primary/40 bg-primary/5 ring-2 ring-primary" : "border-border"
                 )}
               >
-                <ClienteMark cliente={c.id} size={40} />
-                <span className="text-sm font-bold text-foreground">{c.nome}</span>
+                <ClienteMark cliente={c.id} size={24} />
+                <span className="min-w-0 truncate text-sm font-bold text-foreground">{c.nome}</span>
                 {ultimoUsado === c.id && cliente !== c.id && (
-                  <span className="absolute right-2 top-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  <span className="absolute right-2 top-1.5 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                     último usado
                   </span>
                 )}
@@ -594,8 +589,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* History */}
-        <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Sem escolha de cliente: bloco calmo no lugar do upload */}
         {cliente === null && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && (
@@ -683,6 +676,8 @@ const Index = () => {
           </Card>
         )}
 
+        {/* Últimas extrações — recolhido por padrão, abaixo da área de envio */}
+        <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Progress */}
         {isExtracting && (
