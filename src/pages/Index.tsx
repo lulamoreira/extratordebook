@@ -676,6 +676,8 @@ const Index = () => {
           </Card>
         )}
 
+        {/* Últimas extrações — recolhido por padrão, abaixo da área de envio */}
+        <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Progress */}
         {isExtracting && (
