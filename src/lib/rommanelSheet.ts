@@ -14,6 +14,7 @@
  */
 import ExcelJS from "exceljs";
 import type { RommanelPiece } from "@/data/rommanelPieces";
+import { sanitizarXlsx } from "@/lib/xlsxSanitize";
 
 export interface RelatorioRommanel {
   colunasVarejo: number;
@@ -27,6 +28,8 @@ export interface RelatorioRommanel {
   problemas: string[];
   /** Como cada aba foi tratada (bloco antigo encontrado x aba vinha vazia). */
   caminhos: string[];
+  formulasConvertidas: number;
+  valoresFixos: number;
   ok: boolean;
 }
 
@@ -96,6 +99,7 @@ const textoCelula = (cell: ExcelJS.Cell): string => {
 };
 
 const limparCelula = (cell: ExcelJS.Cell): void => {
+  // O setter substitui o FormulaValue inteiro: descarta sharedFormula/shareType/ref.
   cell.value = null;
   cell.style = {} as ExcelJS.Style;
 };
@@ -285,7 +289,43 @@ export async function gerarPastaRommanel(
 
   onProgress?.("Lendo a planilha da campanha anterior...", 5);
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(await arquivoBase.arrayBuffer());
+  let formulasConvertidas = 0;
+  let valoresFixos = 0;
+  try {
+    onProgress?.("Recuperando fórmulas da planilha base...", 6);
+    await tick();
+    const saneado = await sanitizarXlsx(await arquivoBase.arrayBuffer());
+    formulasConvertidas = saneado.formulasConvertidas;
+    valoresFixos = saneado.valoresFixos;
+    await wb.xlsx.load(saneado.buffer);
+  } catch {
+    throw new Error(
+      "Não foi possível ler esta planilha base. Abra o arquivo no Excel, salve por cima e tente de novo."
+    );
+  }
+
+  // Uma passada em TODAS as abas antes de apagar mestres, mover células ou linhas.
+  // Apenas linhas existentes, com limite estático; resultados 0/false são preservados.
+  for (const ws of wb.worksheets) {
+    const rows: ExcelJS.Row[] = [];
+    ws.eachRow({ includeEmpty: false }, (row) => rows.push(row));
+    for (let i = 0; i < rows.length; i++) {
+      passo();
+      rows[i].eachCell({ includeEmpty: false }, (cell) => {
+        passo();
+        if (cell.type !== ExcelJS.ValueType.Formula) return;
+        const formula = cell.formula;
+        const result = cell.result;
+        if (formula) cell.value = { formula, result };
+        else cell.value = result ?? null;
+      });
+      if ((i + 1) % 200 === 0) {
+        onProgress?.(`Normalizando fórmulas de ${ws.name}: ${i + 1} de ${rows.length} linhas...`, 10);
+        await tick();
+      }
+    }
+    await tick();
+  }
 
   /* --- Abas ------------------------------------------------------- */
   const acharAba = (alvo: string) =>
@@ -317,6 +357,8 @@ export async function gerarPastaRommanel(
     secoesNovas: [],
     problemas: [],
     caminhos: [],
+    formulasConvertidas,
+    valoresFixos,
     ok: true,
   };
 

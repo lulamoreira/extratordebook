@@ -45,6 +45,10 @@ const Relatorio = ({ r }: { r: RelatorioRommanel }) => (
     <p>{r.colunasVarejo} colunas de peça na VAREJO</p>
     <p>{r.formulasQuant} fórmulas Quant na aba da campanha</p>
     <p>{r.linhasDadosNf} linhas na DADOS NF</p>
+    <p>{r.formulasConvertidas} fórmulas compartilhadas convertidas em fórmulas comuns</p>
+    <p className={r.valoresFixos > 0 ? "font-semibold text-destructive" : "text-muted-foreground"}>
+      {r.valoresFixos} células recuperadas como valor fixo (valor salvo na planilha base)
+    </p>
     {r.caminhos.map((c) => (
       <p key={c} className="text-muted-foreground">
         {c}
