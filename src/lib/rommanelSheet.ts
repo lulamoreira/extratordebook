@@ -15,6 +15,7 @@
 import ExcelJS from "exceljs";
 import type { RommanelPiece } from "@/data/rommanelPieces";
 import { sanitizarXlsx } from "@/lib/xlsxSanitize";
+import { identificarAbasRommanel } from "@/lib/rommanelWorkbook";
 
 export interface RelatorioRommanel {
   colunasVarejo: number;
@@ -347,25 +348,7 @@ export async function gerarPastaRommanel(
   }
 
   /* --- Abas ------------------------------------------------------- */
-  const acharAba = (alvo: string) =>
-    wb.worksheets.find((ws) => normCompacto(ws.name) === alvo) ?? null;
-
-  const varejo = acharAba("VAREJO");
-  const dadosNf = acharAba("DADOSNF");
-  const orcTransp = acharAba("ORCTRANSP");
-  const rastreio = acharAba("RASTREIO");
-
-  const faltando: string[] = [];
-  if (!varejo) faltando.push("VAREJO");
-  if (!dadosNf) faltando.push("DADOS NF");
-  if (!orcTransp) faltando.push("ORÇ TRANSP");
-  if (!rastreio) faltando.push("RASTREIO");
-  if (faltando.length > 0)
-    throw new Error(`A planilha enviada não tem a aba: ${faltando.join(", ")}.`);
-
-  const conhecidas = new Set([varejo!.id, dadosNf!.id, orcTransp!.id, rastreio!.id]);
-  const abaCampanha = wb.worksheets.find((ws) => !conhecidas.has(ws.id));
-  if (!abaCampanha) throw new Error("Não encontrei a aba da campanha na planilha enviada.");
+  const { varejo, dadosNf, abaCampanha } = identificarAbasRommanel(wb);
   abaCampanha.name = nomeCampanha;
 
   const relatorio: RelatorioRommanel = {

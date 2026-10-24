@@ -2,10 +2,11 @@ import { PDFDocument } from "pdf-lib";
 import { supabase } from "@/integrations/supabase/client";
 import { bytesToBase64 } from "@/lib/base64";
 import type { NaturaRow } from "@/lib/naturaSheet";
+import { CLIENTE_PADRAO, type ClienteId } from "@/lib/clientes";
 import {
   chaveDaPeca,
   chaveDaRegra,
-  lerPlanilhaNatura,
+  lerPlanilhaDoCliente,
   normalizar,
   type Alvo,
   type AprendizadoItem,
@@ -89,9 +90,10 @@ export async function aprenderDoBook(
   planilha: File,
   pdf: File,
   naturaRowsSalvas: NaturaRow[],
-  onProgress?: (p: BookLearningProgresso) => void
+  onProgress?: (p: BookLearningProgresso) => void,
+  cliente: ClienteId = CLIENTE_PADRAO
 ): Promise<BookLearningResultado> {
-  const linhas = await lerPlanilhaNatura(planilha);
+  const linhas = await lerPlanilhaDoCliente(planilha, cliente);
   const validas = linhas.filter((l) => Number(l.pagBook) > 0);
   const descartadas = linhas.length - validas.length;
 
