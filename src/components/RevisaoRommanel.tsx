@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
   TableBody,
   TableHead,
   TableHeader,
@@ -407,9 +406,10 @@ export const RevisaoRommanel = ({
         </DropdownMenu>
       </div>
 
-      {/* Tabela com cabeçalho fixo e duas colunas congeladas */}
+      {/* Tabela com cabeçalho fixo e duas colunas congeladas — table direto, sem o
+          embrulho rolável do componente Table, para o sticky funcionar neste contêiner */}
       <div className="max-h-[65vh] overflow-auto rounded-lg border bg-card">
-        <Table>
+        <table className="w-full caption-bottom text-sm">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="sticky left-0 top-0 z-30 w-10 min-w-10 bg-card text-xs" />
