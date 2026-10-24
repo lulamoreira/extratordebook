@@ -85,6 +85,17 @@ const norm = (v: unknown): string =>
 
 const normCompacto = (v: unknown): string => norm(v).replace(/[\s.]/g, "");
 
+/**
+ * Normalização usada APENAS para comparar o Local de instalação com o mapa de
+ * cores: além de acentos, caixa e asterisco, ignora o "S" final, de forma que
+ * VITRINE case com VITRINES, REVESTIMENTO com REVESTIMENTOS, CARTAZETE com
+ * CARTAZETES. O texto gravado na célula não passa por aqui.
+ */
+const normSecao = (v: unknown): string => {
+  const t = norm(v);
+  return t.endsWith("S") ? t.slice(0, -1) : t;
+};
+
 /** Texto visível de uma célula (ignora fórmulas e formatos ricos). */
 const textoCelula = (cell: ExcelJS.Cell): string => {
   const v = cell.value as unknown;
