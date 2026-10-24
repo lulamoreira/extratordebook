@@ -1,0 +1,2 @@
+# Architecture rules
+- Rommanel workbook generation sanitizes shared formulas in a dedicated XLSX module before ExcelJS loads them, then normalizes formulas before any edits; this prevents orphaned masters without affecting other clients.
