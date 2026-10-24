@@ -4,6 +4,6 @@
 - [x] Executar regressões com mestres, clones, órfãos e geração seguida de releitura.
 
 # Aprendizado Rommanel
-- [ ] Compartilhar identificação das abas e ler o layout Rommanel com preenchimento das mesclagens.
-- [ ] Usar a revisão salva como base de comparação, sem exigir geração Natura.
-- [ ] Testar leitores, comparação e diálogo; preservar os demais clientes.
+- [x] Compartilhar identificação das abas e ler o layout Rommanel com preenchimento das mesclagens.
+- [x] Usar a revisão salva como base de comparação, sem exigir geração Natura.
+- [x] Testar leitores, comparação e diálogo; preservar os demais clientes.
