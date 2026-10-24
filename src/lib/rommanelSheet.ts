@@ -232,8 +232,16 @@ const CORES_SECAO: Record<string, CorSecao> = {
 
 const COR_PADRAO: CorSecao = { faixa: "FF595959", fundo: "FFF2F2F2" };
 
+/**
+ * Mapa de cores indexado pela normalização de seção (singular e plural casam).
+ * As chaves declaradas acima continuam legíveis; só a comparação muda.
+ */
+const CORES_SECAO_POR_CHAVE = new Map<string, CorSecao>(
+  Object.entries(CORES_SECAO).map(([local, cor]) => [normSecao(local), cor]),
+);
+
 const corDaSecao = (local: string): { cor: CorSecao; conhecida: boolean } => {
-  const cor = CORES_SECAO[norm(local)];
+  const cor = CORES_SECAO_POR_CHAVE.get(normSecao(local));
   return cor ? { cor, conhecida: true } : { cor: COR_PADRAO, conhecida: false };
 };
 
