@@ -1,7 +1,10 @@
 import ExcelJS from "exceljs";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizarClienteId, type ClienteId } from "@/lib/clientes";
+import { getCliente, normalizarClienteId, type ClienteId } from "@/lib/clientes";
 import type { NaturaRow } from "@/lib/naturaSheet";
+import type { RommanelPiece } from "@/data/rommanelPieces";
+import { identificarAbasRommanel } from "@/lib/rommanelWorkbook";
+import { sanitizarXlsx } from "@/lib/xlsxSanitize";
 
 
 /* ------------------------------------------------------------------ */
@@ -121,7 +124,7 @@ const HEADER_KEYS: { key: keyof Omit<LinhaLida, "grupo">; matches: string[] }[] 
  * Descobre a linha de cabeçalho, mapeia colunas por texto e faz forward-fill
  * das colunas mescladas (grupo, nome, pag book).
  */
-export async function lerPlanilhaNatura(file: File): Promise<LinhaLida[]> {
+export async function lerPlanilhaLayoutNatura(file: File): Promise<LinhaLida[]> {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(await file.arrayBuffer());
   const ws = wb.worksheets[0];
@@ -194,6 +197,93 @@ export async function lerPlanilhaNatura(file: File): Promise<LinhaLida[]> {
   }
 
   return linhas;
+}
+
+/** Lê a campanha, nunca DADOS NF, e usa somente cabeçalhos exatos deste layout. */
+export async function lerPlanilhaLayoutRommanel(file: File): Promise<LinhaLida[]> {
+  const wb = new ExcelJS.Workbook();
+  const saneado = await sanitizarXlsx(await file.arrayBuffer());
+  await wb.xlsx.load(saneado.buffer);
+  const { abaCampanha: ws } = identificarAbasRommanel(wb);
+  let headerRow = 0;
+  ws.eachRow({ includeEmpty: false }, (row, numero) => {
+    if (headerRow) return;
+    row.eachCell({ includeEmpty: false }, (cell) => {
+      if (normalizar(cellText(cell)) === "nome da peca") headerRow = numero;
+    });
+  });
+  if (!headerRow) throw new Error("Cabeçalho Nome da Peça não encontrado.");
+  const headers: Record<string, keyof LinhaLida> = {
+    "local de instalacao": "grupo", kit: "nome", "nome da peca": "item",
+    pagina: "pagBook", "tamanho (cm)": "formato", tamanho: "formato",
+    "tamanho ()": "formato", especificacao: "especificacao",
+  };
+  const colMap: Partial<Record<keyof LinhaLida, number>> = {};
+  ws.getRow(headerRow).eachCell({ includeEmpty: false }, (cell, coluna) => {
+    const key = headers[normalizar(cellText(cell))];
+    if (key) colMap[key] = coluna;
+  });
+  const itemCol = colMap.item;
+  if (!itemCol || !colMap.especificacao) throw new Error("Cabeçalhos da campanha incompletos.");
+  let ultimaLinha = headerRow;
+  ws.eachRow({ includeEmpty: false }, (row, numero) => {
+    if (numero >= headerRow + 2 && cellText(row.findCell(itemCol)).trim()) ultimaLinha = numero;
+  });
+  const linhas: LinhaLida[] = [];
+  let grupo = "", nome = "", pagina = "", especificacao = "";
+  ws.eachRow({ includeEmpty: false }, (row, numero) => {
+    if (numero < headerRow + 2 || numero > ultimaLinha) return;
+    const get = (key: keyof LinhaLida): string => {
+      const coluna = colMap[key];
+      return coluna ? cellText(row.findCell(coluna)).trim() : "";
+    };
+    const item = get("item");
+    const espRaw = get("especificacao");
+    grupo = get("grupo") || grupo;
+    nome = get("nome") || nome;
+    pagina = get("pagBook") || pagina;
+    especificacao = espRaw || especificacao;
+    if (!item && !espRaw) return;
+    linhas.push({ grupo, nome, item, arquivo: "", especificacao,
+      pagBook: Number(pagina.match(/\d+/)?.[0]) || 0, formato: get("formato") });
+  });
+  return linhas;
+}
+
+/** Layout escolhido pelo motor; Montreal continua usando exatamente o leitor Natura. */
+export async function lerPlanilhaDoCliente(file: File, cliente: ClienteId): Promise<LinhaLida[]> {
+  const config = getCliente(cliente);
+  try {
+    return await (config.motorPlanilha === "rommanel"
+      ? lerPlanilhaLayoutRommanel(file) : lerPlanilhaLayoutNatura(file));
+  } catch {
+    throw new Error(`Esta planilha não está no padrão ${config.nome} — envie a planilha gerada pelo app e editada por você.`);
+  }
+}
+
+/** Reproduz os blocos de especificação da campanha a partir da revisão persistida. */
+export function linhasDaRevisaoRommanel(pecas: RommanelPiece[]): NaturaRow[] {
+  const incluidas = pecas.filter((p) => p.incluir !== false);
+  const rows: NaturaRow[] = [];
+  for (let inicio = 0; inicio < incluidas.length;) {
+    const mestre = incluidas[inicio];
+    let fim = inicio;
+    if (mestre.kit) {
+      while (fim + 1 < incluidas.length && incluidas[fim + 1].kit === mestre.kit) fim++;
+    }
+    const especificacaoPadrao = mestre.camposEmBranco?.includes("especificacao")
+      ? "" : mestre.especificacao || "";
+    for (let i = inicio; i <= fim; i++) {
+      const p = incluidas[i];
+      rows.push({ grupo: p.localInstalacao || "", nome: p.kit || "", item: p.nomePeca || "",
+        arquivo: "", especificacaoPadrao,
+        pagBook: p.camposEmBranco?.includes("pagina") ? 0
+          : Number((p.paginas || String(p.pagina || "")).match(/\d+/)?.[0]) || 0,
+        formato: p.camposEmBranco?.includes("tamanho") ? "" : p.tamanho || "" });
+    }
+    inicio = fim + 1;
+  }
+  return rows;
 }
 
 /* ------------------------------------------------------------------ */

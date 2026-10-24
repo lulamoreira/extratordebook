@@ -15,14 +15,16 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getCliente, type ClienteId } from "@/lib/clientes";
-import { getNaturaRows } from "@/lib/historyStorage";
+import { getEntryPieces, getNaturaRows } from "@/lib/historyStorage";
 import type { NaturaRow } from "@/lib/naturaSheet";
+import type { RommanelPiece } from "@/data/rommanelPieces";
 import { aprenderDoBook } from "@/lib/bookLearning";
 import {
   aprenderDeGabarito,
   compararComGerado,
   contarNovidades,
-  lerPlanilhaNatura,
+  lerPlanilhaDoCliente,
+  linhasDaRevisaoRommanel,
   salvarExemplos,
   type AprendizadoItem,
 } from "@/lib/specLearning";
@@ -85,6 +87,7 @@ export const TeachDialog = ({
   const [resumo, setResumo] = useState({ novas: 0, atualizadas: 0, ignoradas: 0 });
   const [salvando, setSalvando] = useState(false);
   const [gerandoNatura, setGerandoNatura] = useState(false);
+  const motorRommanel = getCliente(cliente).motorPlanilha === "rommanel";
 
   useEffect(() => {
     if (!open) return;
@@ -98,10 +101,15 @@ export const TeachDialog = ({
       return;
     }
     setNaturaRows(null);
-    getNaturaRows(extractionId)
-      .then((rows) => setNaturaRows((rows ?? []) as NaturaRow[]))
-      .catch(() => setNaturaRows([]));
-  }, [open, extractionId, somenteGabarito]);
+    let ativo = true;
+    const carregar = motorRommanel
+      ? getEntryPieces(extractionId).then((pecas) =>
+          linhasDaRevisaoRommanel(pecas as unknown as RommanelPiece[]))
+      : getNaturaRows(extractionId).then((rows) => (rows ?? []) as NaturaRow[]);
+    carregar.then((rows) => { if (ativo) setNaturaRows(rows); })
+      .catch(() => { if (ativo) setNaturaRows([]); });
+    return () => { ativo = false; };
+  }, [open, extractionId, somenteGabarito, motorRommanel, cliente]);
 
   const temGerado = (naturaRows?.length ?? 0) > 0;
 
@@ -140,7 +148,7 @@ export const TeachDialog = ({
 
       if (modo === "book") {
         const res = await aprenderDoBook(planilha, pdf as File, naturaRows ?? [], (p) =>
-          setProgresso(p)
+          setProgresso(p), cliente
         );
         novos = res.itens;
         if (res.descartadas > 0) {
@@ -152,7 +160,7 @@ export const TeachDialog = ({
           );
         }
       } else {
-        const linhas = await lerPlanilhaNatura(planilha);
+        const linhas = await lerPlanilhaDoCliente(planilha, cliente);
         if (modo === "planilha") {
           const res = compararComGerado(linhas, naturaRows ?? []);
           novos = res.itens;
@@ -209,7 +217,7 @@ export const TeachDialog = ({
 
         {etapa === "modo" && (
           <div className="space-y-4">
-            {!somenteGabarito && !temGerado && naturaRows !== null && (
+            {!motorRommanel && !somenteGabarito && !temGerado && naturaRows !== null && (
               <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                 As extrações feitas antes desta atualização ainda não têm a versão gerada salva —
                 gere a planilha uma vez para liberar a comparação.
@@ -236,11 +244,11 @@ export const TeachDialog = ({
                     >
                       <span className="block text-sm font-semibold text-foreground">{m.titulo}</span>
                       <span className="block text-xs text-muted-foreground">
-                        {desabilitado
+                        {desabilitado && !motorRommanel
                           ? `Indisponível: gere a Planilha Padrão ${getCliente(cliente).nome} desta extração primeiro.`
                           : m.descricao}
                       </span>
-                      {desabilitado && onGenerateNatura && (
+                      {!motorRommanel && desabilitado && onGenerateNatura && (
                         <Button
                           size="sm"
                           variant="outline"
