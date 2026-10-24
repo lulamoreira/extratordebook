@@ -73,3 +73,30 @@ describe("geração Rommanel com fórmulas compartilhadas", () => {
     );
   });
 });
+
+describe("cores por Local de instalação", () => {
+  const linha = (local: string, nome: string) => ({
+    ...novaLinhaRommanel(),
+    nomePeca: nome,
+    nomeColunaVarejo: nome,
+    unidadeCompra: true,
+    localInstalacao: local,
+  });
+
+  it("casa o singular com a entrada plural sem alterar o texto gravado", async () => {
+    const resultado = await gerarPastaRommanel(
+      comoArquivo(await base()),
+      [linha("VITRINE", "PAINEL"), linha("PRAÇA NOVA", "CARTAZETE")],
+      "NOVA",
+    );
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(resultado.buffer);
+    const campanha = wb.getWorksheet("NOVA");
+    // VITRINE (singular) recebe a cor de VITRINES; o texto gravado é o da extração.
+    expect(campanha?.getCell("A4").value).toBe("VITRINE");
+    expect((campanha?.getCell("A4").fill as ExcelJS.FillPattern).fgColor?.argb).toBe("FF808080");
+    // Seção genuinamente desconhecida continua caindo no cinza padrão e no aviso.
+    expect((campanha?.getCell("A5").fill as ExcelJS.FillPattern).fgColor?.argb).toBe("FF595959");
+    expect(resultado.relatorio.secoesNovas).toEqual(["PRAÇA NOVA"]);
+  });
+});
