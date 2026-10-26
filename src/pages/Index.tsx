@@ -56,6 +56,12 @@ import { cn } from "@/lib/utils";
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
 
+// A trava de tamanho total existe por causa da MEMÓRIA DO NAVEGADOR ao
+// carregar o arquivo inteiro e montar o documento — não por limite de envio
+// (o pdfSplit fatia por páginas E por peso, e cada parte trafega separada).
+const LIMITE_ARQUIVO_MB = 200;
+const AVISO_ARQUIVO_MB = 100;
+
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Remove acentos, caixa e separadores para comparar nomes de arquivo com nomes de clientes. */
@@ -128,6 +134,7 @@ const Index = () => {
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
   const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
   const [conflitoCliente, setConflitoCliente] = useState<{ file: File; clienteDoArquivo: ClienteId } | null>(null);
+  const [arquivoPesado, setArquivoPesado] = useState<File | null>(null);
 
   // Apenas para o rótulo "último usado" — nunca pré-seleciona.
   useEffect(() => {
@@ -195,8 +202,8 @@ const Index = () => {
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("Arquivo muito grande (máx. 50MB).");
+    if (file.size > LIMITE_ARQUIVO_MB * 1024 * 1024) {
+      toast.error("Arquivo acima de 200MB — o navegador não dá conta de abrir um PDF desse tamanho.");
       return;
     }
 
