@@ -56,6 +56,12 @@ import { cn } from "@/lib/utils";
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
 
+// A trava de tamanho total existe por causa da MEMÓRIA DO NAVEGADOR ao
+// carregar o arquivo inteiro e montar o documento — não por limite de envio
+// (o pdfSplit fatia por páginas E por peso, e cada parte trafega separada).
+const LIMITE_ARQUIVO_MB = 200;
+const AVISO_ARQUIVO_MB = 100;
+
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Remove acentos, caixa e separadores para comparar nomes de arquivo com nomes de clientes. */
@@ -128,6 +134,7 @@ const Index = () => {
   const [rommanelPieces, setRommanelPieces] = useState<RommanelPiece[]>([]);
   const [rommanelTotalPages, setRommanelTotalPages] = useState<number | undefined>(undefined);
   const [conflitoCliente, setConflitoCliente] = useState<{ file: File; clienteDoArquivo: ClienteId } | null>(null);
+  const [arquivoPesado, setArquivoPesado] = useState<File | null>(null);
 
   // Apenas para o rótulo "último usado" — nunca pré-seleciona.
   useEffect(() => {
@@ -195,8 +202,8 @@ const Index = () => {
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("Arquivo muito grande (máx. 50MB).");
+    if (file.size > LIMITE_ARQUIVO_MB * 1024 * 1024) {
+      toast.error("Arquivo acima de 200MB — o navegador não dá conta de abrir um PDF desse tamanho.");
       return;
     }
 
@@ -209,10 +216,20 @@ const Index = () => {
     if (clienteEfetivo === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
-        const { pieces: linhas, errors, totalPages } = await extrairBookRommanel(file, (p) => {
-          setProgress(p.progress);
-          setProcessingFiles(p.partes);
-        });
+        const { pieces: linhas, errors, totalPages, partesSubdivididas, paginasPesadas } =
+          await extrairBookRommanel(file, (p) => {
+            setProgress(p.progress);
+            setProcessingFiles(p.partes);
+          });
+        if (partesSubdivididas > 0 || paginasPesadas > 0) {
+          toast.info(
+            `Fatiamento por peso: ${partesSubdivididas} parte(s) subdivididas` +
+              (paginasPesadas > 0
+                ? ` e ${paginasPesadas} página(s) pesada(s) enviadas isoladamente (podem falhar).`
+                : "."),
+            { duration: 10000 }
+          );
+        }
         setPieces([]);
         setRommanelPieces(linhas);
         setRommanelTotalPages(totalPages);
@@ -258,7 +275,16 @@ const Index = () => {
 
     try {
       toast.info("Dividindo PDF em partes de até 10 páginas...");
-      const { parts, totalPages } = await splitPdf(file);
+      const { parts, totalPages, partesSubdivididas, paginasPesadas } = await splitPdf(file);
+      if (partesSubdivididas > 0 || paginasPesadas > 0) {
+        toast.info(
+          `Fatiamento por peso: ${partesSubdivididas} parte(s) subdivididas` +
+            (paginasPesadas > 0
+              ? ` e ${paginasPesadas} página(s) pesada(s) enviadas isoladamente (podem falhar).`
+              : "."),
+          { duration: 10000 }
+        );
+      }
       setProgress(10);
 
       const fileStatuses = parts.map((p) => ({ name: p.name, status: "pending" as const }));
@@ -382,6 +408,12 @@ const Index = () => {
     const citado = clienteNoNomeDoArquivo(file.name);
     if (citado && citado !== cliente) {
       setConflitoCliente({ file, clienteDoArquivo: citado });
+      return;
+    }
+    // Acima de 100MB não bloqueia, mas avisa antes: arquivos muito grandes
+    // podem deixar o navegador lento.
+    if (file.size > AVISO_ARQUIVO_MB * 1024 * 1024) {
+      setArquivoPesado(file);
       return;
     }
     processFile(file);
@@ -645,12 +677,12 @@ const Index = () => {
                     <p className="text-sm text-muted-foreground">
                       {isDragging
                         ? "Solte para iniciar o processamento"
-                        : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
+                        : "Selecione um PDF ou arraste para esta área"
                       }
                     </p>
                     {!isDragging && (
                       <p className="text-xs text-muted-foreground">
-                        PDFs longos são divididos automaticamente em partes de até 10 páginas.
+                        PDFs longos são divididos automaticamente; books muito pesados podem demorar mais.
                       </p>
                     )}
                   </div>
@@ -918,6 +950,31 @@ const Index = () => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={resolverConflitoTrocando}>
               Trocar para {conflitoCliente ? getCliente(conflitoCliente.clienteDoArquivo).nome : ""} e extrair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Aviso de arquivo muito grande — não bloqueia, só alerta sobre lentidão */}
+      <AlertDialog open={arquivoPesado !== null} onOpenChange={(aberto) => !aberto && setArquivoPesado(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arquivo muito grande</AlertDialogTitle>
+            <AlertDialogDescription>
+              PDFs acima de 100MB podem deixar o navegador lento enquanto são abertos e divididos.
+              Recomendamos fechar outras abas antes de continuar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setArquivoPesado(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const file = arquivoPesado;
+                setArquivoPesado(null);
+                if (file) processFile(file);
+              }}
+            >
+              Continuar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

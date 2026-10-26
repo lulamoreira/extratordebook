@@ -7,6 +7,13 @@ import { bytesToBase64 } from "@/lib/base64";
  */
 export const MAX_PAGES_PER_PART = 10;
 
+/**
+ * Orçamento de bytes por parte JÁ CONVERTIDA em base64 — é o que de fato
+ * trafega para a edge function. Partes que passam disso são subdivididas
+ * ao meio até caberem (ou até sobrar uma única página).
+ */
+export const ORCAMENTO_BASE64 = 4 * 1024 * 1024;
+
 export interface PdfPart {
   name: string;
   base64: string;
@@ -19,6 +26,18 @@ export interface PdfPart {
 export interface SplitResult {
   parts: PdfPart[];
   totalPages: number;
+  /** Quantas partes precisaram ser subdivididas por peso (relatório). */
+  partesSubdivididas: number;
+  /** Páginas que sozinhas passam do orçamento e foram enviadas assim mesmo. */
+  paginasPesadas: number;
+}
+
+interface FaixaMontada {
+  firstIdx: number;
+  endIdx: number;
+  base64: string;
+  /** Página única que sozinha estoura o orçamento — vai assim mesmo. */
+  pesada: boolean;
 }
 
 export async function splitPdf(file: File): Promise<SplitResult> {
@@ -26,22 +45,13 @@ export async function splitPdf(file: File): Promise<SplitResult> {
   const pdfDoc = await PDFDocument.load(buffer);
   const totalPages = pdfDoc.getPageCount();
   const baseName = file.name.replace(/\.pdf$/i, "");
-  const parts: PdfPart[] = [];
 
-  if (totalPages <= MAX_PAGES_PER_PART) {
-    parts.push({
-      name: file.name,
-      base64: bytesToBase64(new Uint8Array(buffer)),
-      startPage: 1,
-      pageCount: totalPages,
-    });
-    return { parts, totalPages };
-  }
+  const faixas: FaixaMontada[] = [];
+  let partesSubdivididas = 0;
+  let paginasPesadas = 0;
 
-  const totalParts = Math.ceil(totalPages / MAX_PAGES_PER_PART);
-  for (let partIdx = 0; partIdx < totalParts; partIdx++) {
-    const firstIdx = partIdx * MAX_PAGES_PER_PART;
-    const endIdx = Math.min(firstIdx + MAX_PAGES_PER_PART, totalPages);
+  /** Monta o documento da faixa e devolve o base64 já medido. */
+  const montarFaixa = async (firstIdx: number, endIdx: number): Promise<string> => {
     const newDoc = await PDFDocument.create();
     const copiedPages = await newDoc.copyPages(
       pdfDoc,
@@ -49,15 +59,52 @@ export async function splitPdf(file: File): Promise<SplitResult> {
     );
     copiedPages.forEach((page) => newDoc.addPage(page));
     const pdfBytes = await newDoc.save({ useObjectStreams: true });
-    parts.push({
-      name: `${baseName}_parte${partIdx + 1}.pdf`,
-      base64: bytesToBase64(new Uint8Array(pdfBytes)),
-      startPage: firstIdx + 1,
-      pageCount: endIdx - firstIdx,
-    });
+    return bytesToBase64(new Uint8Array(pdfBytes));
+  };
+
+  /**
+   * Mede a faixa; se o base64 passar do orçamento, divide ao meio e mede de
+   * novo, recursivamente, até caber ou sobrar uma única página. Uma página
+   * sozinha acima do orçamento é enviada mesmo assim e marcada como pesada.
+   */
+  const dividir = async (firstIdx: number, endIdx: number): Promise<void> => {
+    const base64 = await montarFaixa(firstIdx, endIdx);
+    if (base64.length <= ORCAMENTO_BASE64) {
+      faixas.push({ firstIdx, endIdx, base64, pesada: false });
+      return;
+    }
+    if (endIdx - firstIdx === 1) {
+      faixas.push({ firstIdx, endIdx, base64, pesada: true });
+      paginasPesadas += 1;
+      return;
+    }
+    partesSubdivididas += 1;
+    const meio = firstIdx + Math.ceil((endIdx - firstIdx) / 2);
+    await dividir(firstIdx, meio);
+    await dividir(meio, endIdx);
+  };
+
+  if (totalPages <= MAX_PAGES_PER_PART) {
+    await dividir(0, totalPages);
+  } else {
+    const totalPartes = Math.ceil(totalPages / MAX_PAGES_PER_PART);
+    for (let partIdx = 0; partIdx < totalPartes; partIdx++) {
+      const firstIdx = partIdx * MAX_PAGES_PER_PART;
+      const endIdx = Math.min(firstIdx + MAX_PAGES_PER_PART, totalPages);
+      await dividir(firstIdx, endIdx);
+    }
   }
 
-  return { parts, totalPages };
+  // Uma faixa única cobrindo o documento inteiro mantém o nome original do arquivo.
+  const arquivoInteiro = faixas.length === 1 && faixas[0].firstIdx === 0 && faixas[0].endIdx === totalPages;
+  const parts: PdfPart[] = faixas.map((f, i) => ({
+    name: arquivoInteiro ? file.name : `${baseName}_parte${i + 1}.pdf`,
+    base64: f.base64,
+    startPage: f.firstIdx + 1,
+    pageCount: f.endIdx - f.firstIdx,
+  }));
+
+  return { parts, totalPages, partesSubdivididas, paginasPesadas };
 }
 
 /**

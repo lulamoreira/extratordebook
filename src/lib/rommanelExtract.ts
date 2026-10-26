@@ -22,6 +22,9 @@ export interface ResultadoRommanel {
   pieces: RommanelPiece[];
   errors: PartError[];
   totalPages: number;
+  /** Partes subdivididas por peso e páginas pesadas enviadas isoladamente. */
+  partesSubdivididas: number;
+  paginasPesadas: number;
 }
 
 interface RespostaParte {
@@ -97,7 +100,7 @@ export async function extrairBookRommanel(
   file: File,
   onProgress: (p: ProgressoRommanel) => void
 ): Promise<ResultadoRommanel> {
-  const { parts, totalPages } = await splitPdf(file);
+  const { parts, totalPages, partesSubdivididas, paginasPesadas } = await splitPdf(file);
 
   const statuses: { name: string; status: PartStatus }[] = parts.map((p) => ({
     name: p.name,
@@ -163,5 +166,5 @@ export async function extrairBookRommanel(
   );
 
   report(100);
-  return { pieces: ordenadas, errors, totalPages };
+  return { pieces: ordenadas, errors, totalPages, partesSubdivididas, paginasPesadas };
 }
