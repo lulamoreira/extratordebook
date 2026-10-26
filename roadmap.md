@@ -11,4 +11,4 @@
 # Cobertura de books
 - [x] Persistir cobertura, contar deduplicação e indicar páginas sem peça e não lidas.
 - [x] Recuperar apenas páginas faltantes preservando revisão e contexto Rommanel.
-- [ ] Validar testes e recuperação pela tela com histórico persistido.
+- [x] Validar testes e recuperação pela tela com histórico persistido.

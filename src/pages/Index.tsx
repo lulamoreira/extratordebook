@@ -254,7 +254,7 @@ const Index = () => {
           );
         }
 
-        if (linhas.length > 0 || errors.length > 0) {
+        if (totalPages > 0) {
           try {
             const entry = await saveToHistory(
               file.name,
@@ -848,6 +848,7 @@ const Index = () => {
           const file = e.target.files?.[0]; e.target.value = ""; if (file) void reprocessar(file);
         }} />
         <AvisoCobertura cobertura={cobertura} onRetry={solicitarReprocessamento} busy={recuperando || isExtracting} />
+        {cobertura && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && <div className="mb-4 text-sm text-muted-foreground">0 peças<ResumoCobertura cobertura={cobertura} /><InfoCobertura cobertura={cobertura} /></div>}
 
         {/* Results */}
         {pieces.length > 0 && (
