@@ -53,3 +53,17 @@ describe("paginaGlobal", () => {
     expect(paginaGlobal(parte, undefined)).toBe(0);
   });
 });
+
+describe("recuperação de páginas faltantes", () => {
+  it("seleciona apenas páginas faltantes em faixas contíguas de no máximo 10 páginas", async () => {
+    const paginas = [2, 3, ...Array.from({ length: 12 }, (_, i) => 8 + i)];
+    const { parts, totalPages } = await splitPdf(await criarPdfLeve(23), paginas);
+    expect(totalPages).toBe(23);
+    expect(parts.map(p => [p.startPage, p.pageCount])).toEqual([[2, 2], [8, 10], [18, 2]]);
+    expect(parts.flatMap(p => Array.from({ length: p.pageCount }, (_, i) => p.startPage + i))).toEqual(paginas);
+    for (const p of parts) expect(p.base64.length).toBeLessThanOrEqual(ORCAMENTO_BASE64);
+  });
+  it("recusa PDF que não contém as páginas solicitadas", async () => {
+    await expect(splitPdf(await criarPdfLeve(3), [4])).rejects.toThrow("book original");
+  });
+});

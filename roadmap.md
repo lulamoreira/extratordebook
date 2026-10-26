@@ -7,3 +7,8 @@
 - [x] Compartilhar identificação das abas e ler o layout Rommanel com preenchimento das mesclagens.
 - [x] Usar a revisão salva como base de comparação, sem exigir geração Natura.
 - [x] Testar leitores, comparação e diálogo; preservar os demais clientes.
+
+# Cobertura de books
+- [x] Persistir cobertura, contar deduplicação e indicar páginas sem peça e não lidas.
+- [x] Recuperar apenas páginas faltantes preservando revisão e contexto Rommanel.
+- [ ] Validar testes e recuperação pela tela com histórico persistido.
