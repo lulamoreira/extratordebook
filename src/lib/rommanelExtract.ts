@@ -5,12 +5,8 @@ import type { PartError } from "@/lib/historyStorage";
 import { normalizarRommanelPieces, type RommanelPiece } from "@/data/rommanelPieces";
 import { calcularCobertura, type Cobertura } from "@/lib/pageCoverage";
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 3000;
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-export type PartStatus = "pending" | "processing" | "done" | "error";
+import { erroDaFuncao, processarComRetentativas, type PartStatus } from "@/lib/extractionRetry";
+export type { PartStatus } from "@/lib/extractionRetry";
 
 export interface ProgressoRommanel {
   /** 0 a 100. */
@@ -21,6 +17,8 @@ export interface ProgressoRommanel {
 
 export interface ResultadoRommanel {
   cobertura: Cobertura;
+  resumo: string;
+  interrompido?: string;
   pieces: RommanelPiece[];
   errors: PartError[];
   totalPages: number;
@@ -47,7 +45,7 @@ async function processarParte(
     body: { pdfBase64: part.base64, fileName: part.name, secaoCorrente, kitAberto, rules },
   });
 
-  if (error) throw new Error(error.message || "Erro ao processar PDF");
+  if (error) throw await erroDaFuncao(error);
   if (!data || !Array.isArray(data.pieces)) {
     throw new Error(data?.error || "Nenhuma peça encontrada no PDF");
   }
@@ -123,42 +121,27 @@ export async function extrairBookRommanel(
   let kitAberto = "";
   const sucesso: PdfPart[] = [];
 
-  for (let i = 0; i < parts.length; i++) {
+  const execucao = await processarComRetentativas(parts.length, async i => {
+    // State changes only on success; failed attempts cannot erase section or kit.
     if (recuperacao && (i === 0 || parts[i - 1].startPage + parts[i - 1].pageCount !== parts[i].startPage)) {
       const anterior = [...recuperacao.anteriores, ...pieces]
         .filter(p => p.pagina < parts[i].startPage && p.localInstalacao)
         .sort((a, b) => b.pagina - a.pagina)[0];
-      secaoCorrente = anterior?.localInstalacao ?? "";
-      kitAberto = anterior?.kit ?? "";
+      secaoCorrente = anterior?.localInstalacao || secaoCorrente;
+      kitAberto = anterior?.kit ?? kitAberto;
     }
-    statuses[i].status = "processing";
-    report(Math.round(10 + (i / parts.length) * 70));
-
-    let ultimoErro = "";
-    let ok = false;
-
-    for (let attempt = 0; attempt <= MAX_RETRIES && !ok; attempt++) {
-      if (attempt > 0) await delay(RETRY_DELAY_MS * attempt);
-      try {
-        const res = await processarParte(parts[i], secaoCorrente, kitAberto, rules);
-        pieces.push(...res.pieces);
-        secaoCorrente = res.secaoFinal;
-        kitAberto = res.kitFinal;
-        sucesso.push(parts[i]);
-        ok = true;
-      } catch (err) {
-        ultimoErro = err instanceof Error ? err.message : "Erro desconhecido";
-        console.error(`Rommanel: falha em ${parts[i].name} (tentativa ${attempt + 1})`, err);
-      }
-    }
-
-    statuses[i].status = ok ? "done" : "error";
-    if (!ok) falhas.push({ index: i, error: ultimoErro });
-    // Libera o base64 da parte: ele não é mais necessário e ocupa muita memória,
-    // que a geração da planilha vai precisar depois.
-    parts[i].base64 = "";
-    report(Math.round(10 + ((i + 1) / parts.length) * 70));
-  }
+    const res = await processarParte(parts[i], secaoCorrente, kitAberto, rules);
+    pieces.push(...res.pieces);
+    secaoCorrente = res.secaoFinal || secaoCorrente;
+    kitAberto = res.kitFinal;
+    sucesso.push(parts[i]);
+    return res;
+  }, p => {
+    statuses[p.index].status = p.status;
+    report(Math.round(10 + (sucesso.length / parts.length) * 80), p.message);
+  });
+  falhas.push(...execucao.failures);
+  parts.forEach(p => { p.base64 = ""; });
 
   const errors: PartError[] = falhas.map(({ index, error }) => {
     const part = parts[index];
@@ -178,7 +161,7 @@ export async function extrairBookRommanel(
       .map(({ p }) => p)
   );
 
-  report(100);
+  report(100, execucao.summary);
   return { pieces: ordenadas, errors, totalPages, partesSubdivididas, paginasPesadas,
-    cobertura: calcularCobertura(totalPages, sucesso, ordenadas) };
+    cobertura: calcularCobertura(totalPages, sucesso, ordenadas), resumo: execucao.summary, interrompido: execucao.stopped };
 }

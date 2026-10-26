@@ -12,3 +12,8 @@
 - [x] Persistir cobertura, contar deduplicação e indicar páginas sem peça e não lidas.
 - [x] Recuperar apenas páginas faltantes preservando revisão e contexto Rommanel.
 - [x] Validar testes e recuperação pela tela com histórico persistido.
+
+# Retentativas por tipo de falha
+- [x] Compartilhar políticas, estados intermediários e contagem regressiva nos dois caminhos e na recuperação.
+- [x] Repassar Retry-After e falhas de configuração nas funções, preservando prompts e cobertura.
+- [x] Validar tempos, interrupção fatal, continuidade Rommanel e estados pela tela.
