@@ -48,11 +48,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LISTA_CLIENTES, getCliente, type ClienteId } from "@/lib/clientes";
 import { cn } from "@/lib/utils";
+import { type Cobertura, faixasNaturais } from "@/lib/pageCoverage";
 
 type FiltroCliente = ClienteId | "todos";
 
 interface Props {
-  onLoad: (pieces: Piece[], fileName: string, entryId: string, cliente: ClienteId) => void;
+  onLoad: (pieces: Piece[], fileName: string, entryId: string, cliente: ClienteId, cobertura?: Cobertura) => void;
   refreshKey: number;
 }
 
@@ -110,7 +111,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
     setBusyId(entry.id);
     try {
       const pieces = await getEntryPieces(entry.id);
-      onLoad(pieces, entry.nickname || entry.fileName, entry.id, entry.cliente);
+      onLoad(pieces, entry.nickname || entry.fileName, entry.id, entry.cliente, entry.cobertura);
       // Ao abrir uma extração, o trabalho passa a ser a tabela — recolhe o histórico.
       alternarAberto(false);
     } catch (err) {
@@ -336,13 +337,14 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                           {" · "}
                           {format(new Date(entry.createdAt), "dd/MM HH:mm", { locale: ptBR })}
                         </span>
-                        {entry.errors && entry.errors.length > 0 && (
+                        {(entry.cobertura?.paginasFaltando.length || (entry.errors && entry.errors.length > 0)) && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => toggleErrors(entry.id)}
-                            title="Ver relatório de erros"
+                            title={entry.cobertura?.paginasFaltando.length ? `Páginas não lidas: ${faixasNaturais(entry.cobertura.paginasFaltando)}` : "Ver relatório de erros"}
+                            aria-label="Ver páginas não lidas e relatório de erros"
                           >
                             <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                           </Button>
@@ -421,6 +423,7 @@ const ExtractionHistory = ({ onLoad, refreshKey }: Props) => {
                     )}
 
                     {/* Error Report */}
+                    {expandedErrors.has(entry.id) && !!entry.cobertura?.paginasFaltando.length && <p className="px-3 py-2 text-sm text-warning">Páginas não lidas: {faixasNaturais(entry.cobertura.paginasFaltando)}. Pode haver peças faltando.</p>}
                     {entry.errors && entry.errors.length > 0 && expandedErrors.has(entry.id) && (
                       <div className="ml-6 mb-1 mt-1 space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs">
                         <div className="flex items-center gap-1.5 font-semibold text-destructive">

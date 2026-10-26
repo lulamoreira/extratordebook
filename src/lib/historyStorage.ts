@@ -1,6 +1,7 @@
 import { type Piece } from "@/data/extractedPieces";
 import { supabase } from "@/integrations/supabase/client";
 import { CLIENTE_PADRAO, normalizarClienteId, type ClienteId } from "@/lib/clientes";
+import { lerCobertura, type Cobertura } from "@/lib/pageCoverage";
 
 export interface PartError {
   partName: string;
@@ -17,9 +18,10 @@ export interface HistoryEntry {
   errors?: PartError[];
   createdAt: string;
   cliente: ClienteId;
+  cobertura?: Cobertura;
 }
 
-const LIGHT_COLUMNS = "id, file_name, nickname, piece_count, errors, created_at, cliente";
+const LIGHT_COLUMNS = "id, file_name, nickname, piece_count, errors, created_at, cliente, cobertura";
 const PAGE_SIZE = 200;
 
 const toEntry = (row: Record<string, unknown>): HistoryEntry => {
@@ -33,6 +35,7 @@ const toEntry = (row: Record<string, unknown>): HistoryEntry => {
     errors: errors.length > 0 ? errors : undefined,
     createdAt: String(row.created_at ?? new Date().toISOString()),
     cliente: normalizarClienteId(row.cliente),
+    cobertura: lerCobertura(row.cobertura),
   };
 };
 
@@ -104,7 +107,8 @@ export async function saveToHistory(
   fileName: string,
   pieces: Piece[],
   errors?: PartError[],
-  cliente: ClienteId = CLIENTE_PADRAO
+  cliente: ClienteId = CLIENTE_PADRAO,
+  cobertura?: Cobertura
 ): Promise<HistoryEntry> {
   const { data, error } = await supabase
     .from("extractions")
@@ -115,6 +119,7 @@ export async function saveToHistory(
       errors: (errors ?? []) as unknown as never,
       piece_count: pieces.length,
       cliente,
+      cobertura: cobertura as unknown as never,
     })
 
     .select(LIGHT_COLUMNS)
@@ -126,6 +131,15 @@ export async function saveToHistory(
 
 export async function updateNickname(id: string, nickname: string): Promise<void> {
   const { error } = await supabase.from("extractions").update({ nickname }).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Recovery commits pieces, coverage and current failures atomically. */
+export async function salvarRecuperacao(id: string, pieces: Piece[], cobertura: Cobertura, errors: PartError[], pieceCount = pieces.length): Promise<void> {
+  const { error } = await supabase.from("extractions").update({
+    pieces: pieces as unknown as never, cobertura: cobertura as unknown as never,
+    errors: errors as unknown as never, piece_count: pieceCount,
+  }).eq("id", id);
   if (error) throw new Error(error.message);
 }
 
