@@ -40,7 +40,7 @@ interface FaixaMontada {
   pesada: boolean;
 }
 
-export async function splitPdf(file: File): Promise<SplitResult> {
+export async function splitPdf(file: File, paginasSelecionadas?: number[]): Promise<SplitResult> {
   const buffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(buffer);
   const totalPages = pdfDoc.getPageCount();
@@ -84,7 +84,18 @@ export async function splitPdf(file: File): Promise<SplitResult> {
     await dividir(meio, endIdx);
   };
 
-  if (totalPages <= MAX_PAGES_PER_PART) {
+  if (paginasSelecionadas) {
+    const selecionadas = [...new Set(paginasSelecionadas)].sort((a, b) => a - b);
+    if (selecionadas.some(n => !Number.isInteger(n) || n < 1 || n > totalPages)) {
+      throw new Error("As páginas faltantes não existem neste PDF. Envie o book original.");
+    }
+    for (let i = 0; i < selecionadas.length; i++) {
+      const inicio = selecionadas[i];
+      let fim = inicio;
+      while (selecionadas[i + 1] === fim + 1 && fim - inicio + 1 < MAX_PAGES_PER_PART) fim = selecionadas[++i];
+      await dividir(inicio - 1, fim);
+    }
+  } else if (totalPages <= MAX_PAGES_PER_PART) {
     await dividir(0, totalPages);
   } else {
     const totalPartes = Math.ceil(totalPages / MAX_PAGES_PER_PART);

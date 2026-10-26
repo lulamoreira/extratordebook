@@ -3,6 +3,7 @@ import { splitPdf, paginaGlobal, type PdfPart } from "@/lib/pdfSplit";
 import { carregarRegras } from "@/lib/specLearning";
 import type { PartError } from "@/lib/historyStorage";
 import { normalizarRommanelPieces, type RommanelPiece } from "@/data/rommanelPieces";
+import { calcularCobertura, type Cobertura } from "@/lib/pageCoverage";
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 3000;
@@ -19,6 +20,7 @@ export interface ProgressoRommanel {
 }
 
 export interface ResultadoRommanel {
+  cobertura: Cobertura;
   pieces: RommanelPiece[];
   errors: PartError[];
   totalPages: number;
@@ -98,9 +100,11 @@ const diagnosticar = (msg: string): string => {
  */
 export async function extrairBookRommanel(
   file: File,
-  onProgress: (p: ProgressoRommanel) => void
+  onProgress: (p: ProgressoRommanel) => void,
+  recuperacao?: { paginas: number[]; anteriores: RommanelPiece[]; totalPaginas: number }
 ): Promise<ResultadoRommanel> {
-  const { parts, totalPages, partesSubdivididas, paginasPesadas } = await splitPdf(file);
+  const { parts, totalPages, partesSubdivididas, paginasPesadas } = await splitPdf(file, recuperacao?.paginas);
+  if (recuperacao && totalPages !== recuperacao.totalPaginas) throw new Error("Envie o book original: a quantidade de páginas é diferente.");
 
   const statuses: { name: string; status: PartStatus }[] = parts.map((p) => ({
     name: p.name,
@@ -117,8 +121,16 @@ export async function extrairBookRommanel(
   const falhas: { index: number; error: string }[] = [];
   let secaoCorrente = "";
   let kitAberto = "";
+  const sucesso: PdfPart[] = [];
 
   for (let i = 0; i < parts.length; i++) {
+    if (recuperacao && (i === 0 || parts[i - 1].startPage + parts[i - 1].pageCount !== parts[i].startPage)) {
+      const anterior = [...recuperacao.anteriores, ...pieces]
+        .filter(p => p.pagina < parts[i].startPage && p.localInstalacao)
+        .sort((a, b) => b.pagina - a.pagina)[0];
+      secaoCorrente = anterior?.localInstalacao ?? "";
+      kitAberto = anterior?.kit ?? "";
+    }
     statuses[i].status = "processing";
     report(Math.round(10 + (i / parts.length) * 70));
 
@@ -132,6 +144,7 @@ export async function extrairBookRommanel(
         pieces.push(...res.pieces);
         secaoCorrente = res.secaoFinal;
         kitAberto = res.kitFinal;
+        sucesso.push(parts[i]);
         ok = true;
       } catch (err) {
         ultimoErro = err instanceof Error ? err.message : "Erro desconhecido";
@@ -166,5 +179,6 @@ export async function extrairBookRommanel(
   );
 
   report(100);
-  return { pieces: ordenadas, errors, totalPages, partesSubdivididas, paginasPesadas };
+  return { pieces: ordenadas, errors, totalPages, partesSubdivididas, paginasPesadas,
+    cobertura: calcularCobertura(totalPages, sucesso, ordenadas) };
 }

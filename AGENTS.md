@@ -1,3 +1,4 @@
 # Architecture rules
 - Rommanel workbook generation sanitizes shared formulas in a dedicated XLSX module before ExcelJS loads them, then normalizes formulas before any edits; this prevents orphaned masters without affecting other clients.
 - Rommanel generation and learning share worksheet identification; learning selects its reader and saved comparison baseline by the client's spreadsheet engine to avoid cross-client layout assumptions.
+- Page coverage tracks successful PDF ranges independently of returned pieces; recovery uses contiguous missing-page ranges and appends to current edited rows so successful reading is not confused with finding a piece.

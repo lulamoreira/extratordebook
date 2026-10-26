@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { classificarTipo, type Piece } from "@/data/extractedPieces";
-import { saveToHistory, updateHistoryPieces, type PartError } from "@/lib/historyStorage";
+import { saveToHistory, updateHistoryPieces, salvarRecuperacao, type PartError } from "@/lib/historyStorage";
 
 import * as XLSX from "xlsx";
 import { splitPdf, type PdfPart } from "@/lib/pdfSplit";
@@ -50,6 +50,8 @@ import TeachDialog from "@/components/TeachDialog";
 import { GraduationCap } from "lucide-react";
 import ResultadosActionBar from "@/components/ResultadosActionBar";
 import { cn } from "@/lib/utils";
+import { calcularCobertura, mesclarCobertura, mesclarPecas, type Cobertura } from "@/lib/pageCoverage";
+import { AvisoCobertura, InfoCobertura, ResumoCobertura } from "@/components/CoberturaExtracao";
 
 
 
@@ -116,6 +118,12 @@ const normalizePieces = (input: Piece[]): Piece[] => {
 };
 
 const Index = () => {
+  const [cobertura, setCobertura] = useState<Cobertura>();
+  const [recuperando, setRecuperando] = useState(false);
+  const [preservarRevisao, setPreservarRevisao] = useState(false);
+  const arquivoOriginal = useRef<File | null>(null);
+  const revisaoAtual = useRef<RommanelPiece[]>([]);
+  const retryInput = useRef<HTMLInputElement>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -208,6 +216,9 @@ const Index = () => {
     }
 
 
+    arquivoOriginal.current = file;
+    setCobertura(undefined);
+    setPreservarRevisao(false);
     setFileName(file.name);
     setIsExtracting(true);
     setProgress(2);
@@ -216,7 +227,7 @@ const Index = () => {
     if (clienteEfetivo === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
-        const { pieces: linhas, errors, totalPages, partesSubdivididas, paginasPesadas } =
+        const { pieces: linhas, errors, totalPages, partesSubdivididas, paginasPesadas, cobertura: auditoria } =
           await extrairBookRommanel(file, (p) => {
             setProgress(p.progress);
             setProcessingFiles(p.partes);
@@ -230,6 +241,8 @@ const Index = () => {
             { duration: 10000 }
           );
         }
+        setCobertura(auditoria);
+        revisaoAtual.current = linhas;
         setPieces([]);
         setRommanelPieces(linhas);
         setRommanelTotalPages(totalPages);
@@ -241,13 +254,14 @@ const Index = () => {
           );
         }
 
-        if (linhas.length > 0 || errors.length > 0) {
+        if (totalPages > 0) {
           try {
             const entry = await saveToHistory(
               file.name,
               linhas as unknown as Piece[],
               errors,
-              "rommanel"
+              "rommanel",
+              auditoria
             );
             setCurrentEntryId(entry.id);
             setHistoryRefreshKey((prev) => prev + 1);
@@ -293,6 +307,7 @@ const Index = () => {
       // Regras de leitura aprendidas com o usuário (alvo 'extracao'/'ambos').
       const extractionRules = await carregarRegras(clienteEfetivo, "extracao");
 
+      const partesLidas = new Set<number>();
       let allPieces: Piece[] = [];
       let successCount = 0;
       let partErrors: PartError[] = [];
@@ -309,6 +324,7 @@ const Index = () => {
           const extracted = await processOnePart(parts[i], extractionRules);
           allPieces = [...allPieces, ...extracted];
           successCount += extracted.length;
+          partesLidas.add(i);
           setProcessingFiles((prev) =>
             prev.map((f, idx) => (idx === i ? { ...f, status: "done" } : f))
           );
@@ -344,6 +360,7 @@ const Index = () => {
               const extracted = await processOnePart(parts[index], extractionRules);
               allPieces = [...allPieces, ...extracted];
               successCount += extracted.length;
+              partesLidas.add(index);
               setProcessingFiles((prev) =>
                 prev.map((f, idx) => (idx === index ? { ...f, status: "done" } : f))
               );
@@ -375,12 +392,15 @@ const Index = () => {
       }
 
       const finalPieces = normalizePieces(allPieces);
+      const auditoria = calcularCobertura(totalPages, parts.filter((_, i) => partesLidas.has(i)), allPieces);
+      auditoria.linhasDescartadas = allPieces.length - finalPieces.length;
+      setCobertura(auditoria);
       setPieces(finalPieces);
       setProgress(100);
 
-      if (successCount > 0 || partErrors.length > 0) {
+      if (totalPages > 0) {
         try {
-          const entry = await saveToHistory(file.name, finalPieces, partErrors, clienteEfetivo);
+          const entry = await saveToHistory(file.name, finalPieces, partErrors, clienteEfetivo, auditoria);
           setCurrentEntryId(entry.id);
           setHistoryRefreshKey((prev) => prev + 1);
           if (successCount > 0) {
@@ -523,18 +543,23 @@ const Index = () => {
     loaded: Piece[],
     loadedName: string,
     entryId: string,
-    entryCliente: ClienteId
+    entryCliente: ClienteId,
+    entryCobertura?: Cobertura
   ) => {
+    arquivoOriginal.current = null;
+    setCobertura(entryCobertura);
+    setPreservarRevisao(false);
     if (entryCliente === "rommanel") {
       // Extração da Rommanel — tela própria de revisão peça a peça.
       setPieces([]);
       setRommanelPieces(
         normalizarRommanelPieces(loaded as unknown as RommanelPiece[])
       );
-      setRommanelTotalPages(undefined);
+      revisaoAtual.current = normalizarRommanelPieces(loaded as unknown as RommanelPiece[]);
+      setRommanelTotalPages(entryCobertura?.totalPaginas);
     } else {
       setRommanelPieces([]);
-      setPieces(normalizePieces(loaded));
+      setPieces(loaded);
     }
     setFileName(loadedName);
     setCurrentEntryId(entryId);
@@ -559,6 +584,8 @@ const Index = () => {
   };
 
   const handleGoHome = () => {
+    arquivoOriginal.current = null;
+    setCobertura(undefined);
     setPieces([]);
     setRommanelPieces([]);
     setFileName("");
@@ -569,6 +596,72 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+
+  const reprocessar = async (file: File) => {
+    if (!cobertura || !cliente || recuperando || !cobertura.paginasFaltando.length) return;
+    if (file.size > LIMITE_ARQUIVO_MB * 1024 * 1024) { toast.error("Envie um PDF de até 200MB."); return; }
+    setRecuperando(true);
+    try {
+      let novas: Piece[] | RommanelPiece[];
+      let auditoria: Cobertura;
+      let erros: PartError[];
+      if (cliente === "rommanel") {
+        const resultado = await extrairBookRommanel(file, p => setProgress(p.progress), {
+          paginas: cobertura.paginasFaltando, anteriores: revisaoAtual.current, totalPaginas: cobertura.totalPaginas,
+        });
+        novas = resultado.pieces;
+        auditoria = resultado.cobertura;
+        erros = resultado.errors;
+      } else {
+        const resultado = await splitPdf(file, cobertura.paginasFaltando);
+        if (resultado.totalPages !== cobertura.totalPaginas) throw new Error("Envie o book original: a quantidade de páginas é diferente.");
+        const regras = await carregarRegras(cliente, "extracao");
+        const lidas: PdfPart[] = [];
+        const extraidas: Piece[] = [];
+        erros = [];
+        for (const parte of resultado.parts) {
+          let erro = "";
+          let sucesso = false;
+          for (let tentativa = 0; tentativa <= MAX_RETRIES && !sucesso; tentativa++) {
+            if (tentativa > 0) await delay(RETRY_DELAY_MS * tentativa);
+            try { extraidas.push(...await processOnePart(parte, regras)); lidas.push(parte); sucesso = true; }
+            catch (e) { erro = e instanceof Error ? e.message : "Erro desconhecido"; }
+          }
+          if (!sucesso) erros.push({ partName: parte.name, errorMessage: erro, pages: `${parte.startPage}–${parte.startPage + parte.pageCount - 1}` });
+          parte.base64 = "";
+        }
+        auditoria = calcularCobertura(resultado.totalPages, lidas, extraidas);
+        novas = normalizePieces(extraidas);
+        auditoria.linhasDescartadas = extraidas.length - novas.length;
+      }
+      const atualizada = mesclarCobertura(cobertura, auditoria);
+      atualizada.linhasDescartadas = (cobertura.linhasDescartadas ?? 0) + (auditoria.linhasDescartadas ?? 0);
+      const mescladas = cliente === "rommanel"
+        ? mesclarPecas(revisaoAtual.current, novas as RommanelPiece[], cobertura.paginasFaltando)
+        : mesclarPecas(pieces, novas as Piece[], cobertura.paginasFaltando);
+      // Keep the recovered rows visible even when cloud persistence fails.
+      if (cliente === "rommanel") {
+        setPreservarRevisao(true);
+        revisaoAtual.current = mescladas as RommanelPiece[];
+        setRommanelPieces(mescladas as RommanelPiece[]);
+      } else setPieces(mescladas as Piece[]);
+      setCobertura(atualizada);
+      if (currentEntryId) await salvarRecuperacao(currentEntryId, mescladas as unknown as Piece[], atualizada, erros,
+        cliente === "rommanel" ? (mescladas as RommanelPiece[]).filter(p => p.incluir).length : mescladas.length);
+      else {
+        const entry = await saveToHistory(fileName, mescladas as unknown as Piece[], erros, cliente, atualizada);
+        setCurrentEntryId(entry.id);
+      }
+      setHistoryRefreshKey(k => k + 1);
+      toast.success(atualizada.paginasFaltando.length ? "Trechos recuperados; ainda há páginas não lidas." : "Todas as páginas foram lidas. Edições preservadas.");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível reprocessar as páginas."); }
+    finally { setRecuperando(false); }
+  };
+
+  const solicitarReprocessamento = () => {
+    if (arquivoOriginal.current) void reprocessar(arquivoOriginal.current);
+    else { toast.info("Selecione novamente o PDF original para recuperar apenas as páginas faltantes."); retryInput.current?.click(); }
+  };
 
   const addRow = () => {
     setPieces((prev) => [
@@ -751,6 +844,12 @@ const Index = () => {
           </Card>
         )}
 
+        <input ref={retryInput} aria-label="PDF original para recuperar páginas" type="file" accept=".pdf" className="hidden" onChange={e => {
+          const file = e.target.files?.[0]; e.target.value = ""; if (file) void reprocessar(file);
+        }} />
+        <AvisoCobertura cobertura={cobertura} onRetry={solicitarReprocessamento} busy={recuperando || isExtracting} />
+        {cobertura && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && <div className="mb-4 text-sm text-muted-foreground">0 peças<ResumoCobertura cobertura={cobertura} /><InfoCobertura cobertura={cobertura} /></div>}
+
         {/* Results */}
         {pieces.length > 0 && (
           <>
@@ -765,7 +864,8 @@ const Index = () => {
               cliente={cliente ?? CLIENTE_PADRAO}
               clienteNome={clienteAtual.nome}
               titulo={fileName || "Extração"}
-              resumo={`${pieces.length} peças`}
+              resumo={<>{pieces.length} peças<ResumoCobertura cobertura={cobertura} /></>}
+              extra={<InfoCobertura cobertura={cobertura} />}
               primaria={{
                 label: `Gerar Planilha Padrão ${clienteAtual.nome}`,
                 onClick: handleGerarNatura,
@@ -920,6 +1020,9 @@ const Index = () => {
             fileName={fileName}
             entryId={currentEntryId}
             totalPages={rommanelTotalPages}
+            cobertura={cobertura}
+            preservarEdicoes={preservarRevisao}
+            onPiecesChange={linhas => { revisaoAtual.current = linhas; }}
           />
         )}
       </div>

@@ -17,6 +17,7 @@ export type Database = {
       extractions: {
         Row: {
           cliente: string
+          cobertura: Json
           created_at: string
           errors: Json
           file_name: string
@@ -30,6 +31,7 @@ export type Database = {
         }
         Insert: {
           cliente?: string
+          cobertura?: Json
           created_at?: string
           errors?: Json
           file_name?: string
@@ -43,6 +45,7 @@ export type Database = {
         }
         Update: {
           cliente?: string
+          cobertura?: Json
           created_at?: string
           errors?: Json
           file_name?: string
