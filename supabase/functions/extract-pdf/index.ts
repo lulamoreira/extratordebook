@@ -53,7 +53,7 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Serviço de IA não configurado. O processamento foi interrompido.", code: "configuration_error", status: 503 }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     console.log(`Processing PDF: ${fileName || "unknown"}, size: ${pdfBase64.length} chars`);
@@ -135,24 +135,16 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao seu workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "Erro ao processar PDF com IA" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const retryAfter = response.headers.get("Retry-After");
+      const configuration = [400, 401, 403, 404].includes(response.status);
+      const message = response.status === 429 ? "Limite de requisições excedido. Aguarde a nova tentativa."
+        : response.status === 402 ? "Créditos insuficientes. Adicione créditos ao seu workspace."
+        : configuration ? "Serviço de IA com erro de configuração. O processamento foi interrompido."
+        : "Erro temporário ao processar PDF com IA";
+      console.error("AI gateway error status:", response.status);
+      return new Response(JSON.stringify({ error: message, status: response.status,
+        retryAfter, ...(configuration ? { code: "configuration_error" } : {}) }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = await response.json();

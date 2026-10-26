@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, Upload, FileText, Trash2, Pencil, Check, X, Plus, Save, FileSpreadsheet, Loader2, Clock } from "lucide-react";
 import ClienteMark from "@/components/ClienteMark";
 import {
   CLIENTE_PADRAO,
@@ -55,8 +55,7 @@ import { AvisoCobertura, InfoCobertura, ResumoCobertura } from "@/components/Cob
 
 
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 3000;
+import { erroDaFuncao, processarComRetentativas, type PartStatus } from "@/lib/extractionRetry";
 
 // A trava de tamanho total existe por causa da MEMÓRIA DO NAVEGADOR ao
 // carregar o arquivo inteiro e montar o documento — não por limite de envio
@@ -64,7 +63,7 @@ const RETRY_DELAY_MS = 3000;
 const LIMITE_ARQUIVO_MB = 200;
 const AVISO_ARQUIVO_MB = 100;
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 
 /** Remove acentos, caixa e separadores para comparar nomes de arquivo com nomes de clientes. */
 const normalizarTexto = (texto: string): string =>
@@ -127,10 +126,12 @@ const Index = () => {
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [mensagemProgresso, setMensagemProgresso] = useState("");
+  const [resumoExtracao, setResumoExtracao] = useState("");
   const [fileName, setFileName] = useState("");
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editData, setEditData] = useState<Piece | null>(null);
-  const [processingFiles, setProcessingFiles] = useState<{ name: string; status: "pending" | "processing" | "done" | "error" }[]>([]);
+  const [processingFiles, setProcessingFiles] = useState<{ name: string; status: PartStatus }[]>([]);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
@@ -154,7 +155,7 @@ const Index = () => {
   const extracaoLiberada = cliente !== null && clienteAtual.extracaoPronta;
 
   const escolherCliente = (id: ClienteId) => {
-    if (isExtracting) return;
+    if (isExtracting || recuperando) return;
     setCliente(id);
     setUltimoUsado(id);
     salvarClienteSelecionado(id);
@@ -175,7 +176,7 @@ const Index = () => {
       body: { pdfBase64: part.base64, fileName: part.name, rules },
     });
 
-    if (error) throw new Error(error.message || "Erro ao processar PDF");
+    if (error) throw await erroDaFuncao(error);
 
     if (data?.pieces && Array.isArray(data.pieces)) {
       return data.pieces.map((p: any) => {
@@ -222,15 +223,18 @@ const Index = () => {
     setFileName(file.name);
     setIsExtracting(true);
     setProgress(2);
+    setMensagemProgresso("Preparando PDF...");
+    setResumoExtracao("");
 
     // Fluxo paralelo da Rommanel — partes em série, para não perder a seção.
     if (clienteEfetivo === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
-        const { pieces: linhas, errors, totalPages, partesSubdivididas, paginasPesadas, cobertura: auditoria } =
+        const { pieces: linhas, errors, totalPages, partesSubdivididas, paginasPesadas, cobertura: auditoria, resumo, interrompido } =
           await extrairBookRommanel(file, (p) => {
             setProgress(p.progress);
             setProcessingFiles(p.partes);
+            setMensagemProgresso(p.mensagem ?? "");
           });
         if (partesSubdivididas > 0 || paginasPesadas > 0) {
           toast.info(
@@ -247,9 +251,12 @@ const Index = () => {
         setRommanelPieces(linhas);
         setRommanelTotalPages(totalPages);
 
+        setResumoExtracao(resumo);
+        if (interrompido) toast.error(resumo, { duration: 15000 });
+        else if (!errors.length) toast.success(resumo);
         if (errors.length > 0) {
           toast.error(
-            `${errors.length} trecho(s) falharam — as peças desses trechos podem ter ficado sem Local de instalação.`,
+            `${errors.length} trecho(s) não foram lidos. Confira o aviso de páginas faltantes.`,
             { duration: 12000 }
           );
         }
@@ -310,86 +317,26 @@ const Index = () => {
       const partesLidas = new Set<number>();
       let allPieces: Piece[] = [];
       let successCount = 0;
-      let partErrors: PartError[] = [];
-      const failedParts: { index: number; error: string }[] = [];
-
-      // First pass
-      for (let i = 0; i < parts.length; i++) {
-        setProcessingFiles((prev) =>
-          prev.map((f, idx) => (idx === i ? { ...f, status: "processing" } : f))
-        );
-        setProgress(Math.round(10 + ((i) / parts.length) * 70));
-
-        try {
-          const extracted = await processOnePart(parts[i], extractionRules);
-          allPieces = [...allPieces, ...extracted];
-          successCount += extracted.length;
-          partesLidas.add(i);
-          setProcessingFiles((prev) =>
-            prev.map((f, idx) => (idx === i ? { ...f, status: "done" } : f))
-          );
-        } catch (err: any) {
-          console.error(`Error processing ${parts[i].name}:`, err);
-          failedParts.push({ index: i, error: err.message || "Erro desconhecido" });
-          setProcessingFiles((prev) =>
-            prev.map((f, idx) => (idx === i ? { ...f, status: "error" } : f))
-          );
-        }
-      }
-
-      // Retry failed parts
-      if (failedParts.length > 0) {
-        toast.info(`Retentando ${failedParts.length} parte(s) com falha...`);
-        const stillFailed: { index: number; error: string }[] = [];
-
-        for (let retry = 0; retry < MAX_RETRIES; retry++) {
-          const toRetry = retry === 0 ? [...failedParts] : [...stillFailed];
-          stillFailed.length = 0;
-
-          if (toRetry.length === 0) break;
-
-          await delay(RETRY_DELAY_MS * (retry + 1));
-
-          for (const { index } of toRetry) {
-            setProcessingFiles((prev) =>
-              prev.map((f, idx) => (idx === index ? { ...f, status: "processing" } : f))
-            );
-            setProgress(Math.round(80 + ((retry + 1) / MAX_RETRIES) * 15));
-
-            try {
-              const extracted = await processOnePart(parts[index], extractionRules);
-              allPieces = [...allPieces, ...extracted];
-              successCount += extracted.length;
-              partesLidas.add(index);
-              setProcessingFiles((prev) =>
-                prev.map((f, idx) => (idx === index ? { ...f, status: "done" } : f))
-              );
-              toast.success(`"${parts[index].name}" recuperada na tentativa ${retry + 2}!`);
-            } catch (err: any) {
-              stillFailed.push({ index, error: err.message || "Erro desconhecido" });
-              setProcessingFiles((prev) =>
-                prev.map((f, idx) => (idx === index ? { ...f, status: "error" } : f))
-              );
-            }
-          }
-        }
-
-        // Build error report for parts that ultimately failed
-        partErrors = stillFailed.map(({ index, error }) => {
-          const part = parts[index];
-          const startPage = part.startPage;
-          const endPage = Math.min(startPage + part.pageCount - 1, totalPages);
-          return {
-            partName: part.name,
-            errorMessage: error,
-            pages: `${startPage}–${endPage}`,
-          };
-        });
-
-        if (partErrors.length > 0) {
-          toast.error(`${partErrors.length} parte(s) falharam mesmo após ${MAX_RETRIES} retentativas.`);
-        }
-      }
+      const execucao = await processarComRetentativas(parts.length, async i => {
+        const extracted = await processOnePart(parts[i], extractionRules);
+        allPieces.push(...extracted);
+        successCount += extracted.length;
+        partesLidas.add(i);
+        return extracted;
+      }, p => {
+        setProcessingFiles(prev => prev.map((f, idx) => idx === p.index ? { ...f, status: p.status } : f));
+        setMensagemProgresso(p.message);
+        setProgress(Math.round(10 + (partesLidas.size / parts.length) * 85));
+      });
+      const partErrors: PartError[] = execucao.failures.map(({ index, error }) => {
+        const part = parts[index];
+        return { partName: part.name, errorMessage: error,
+          pages: `${part.startPage}–${Math.min(part.startPage + part.pageCount - 1, totalPages)}` };
+      });
+      parts.forEach(p => { p.base64 = ""; });
+      setResumoExtracao(execucao.summary);
+      if (execucao.stopped) toast.error(execucao.summary, { duration: 15000 });
+      else if (!partErrors.length) toast.success(execucao.summary);
 
       const finalPieces = normalizePieces(allPieces);
       const auditoria = calcularCobertura(totalPages, parts.filter((_, i) => partesLidas.has(i)), allPieces);
@@ -415,7 +362,7 @@ const Index = () => {
         }
       }
     } catch (err: any) {
-      toast.error(`Erro ao dividir PDF: ${err.message}`);
+      toast.error(`Erro ao processar PDF: ${err.message}`);
     } finally {
       setIsExtracting(false);
       setTimeout(() => setProcessingFiles([]), 3000);
@@ -601,14 +548,17 @@ const Index = () => {
     if (!cobertura || !cliente || recuperando || !cobertura.paginasFaltando.length) return;
     if (file.size > LIMITE_ARQUIVO_MB * 1024 * 1024) { toast.error("Envie um PDF de até 200MB."); return; }
     setRecuperando(true);
+    setMensagemProgresso("Preparando páginas faltantes...");
     try {
       let novas: Piece[] | RommanelPiece[];
       let auditoria: Cobertura;
       let erros: PartError[];
       if (cliente === "rommanel") {
-        const resultado = await extrairBookRommanel(file, p => setProgress(p.progress), {
+        const resultado = await extrairBookRommanel(file, p => { setProgress(p.progress); setProcessingFiles(p.partes); setMensagemProgresso(p.mensagem ?? ""); }, {
           paginas: cobertura.paginasFaltando, anteriores: revisaoAtual.current, totalPaginas: cobertura.totalPaginas,
         });
+        setResumoExtracao(resultado.resumo);
+        if (resultado.interrompido) toast.error(resultado.resumo, { duration: 15000 });
         novas = resultado.pieces;
         auditoria = resultado.cobertura;
         erros = resultado.errors;
@@ -618,18 +568,24 @@ const Index = () => {
         const regras = await carregarRegras(cliente, "extracao");
         const lidas: PdfPart[] = [];
         const extraidas: Piece[] = [];
-        erros = [];
-        for (const parte of resultado.parts) {
-          let erro = "";
-          let sucesso = false;
-          for (let tentativa = 0; tentativa <= MAX_RETRIES && !sucesso; tentativa++) {
-            if (tentativa > 0) await delay(RETRY_DELAY_MS * tentativa);
-            try { extraidas.push(...await processOnePart(parte, regras)); lidas.push(parte); sucesso = true; }
-            catch (e) { erro = e instanceof Error ? e.message : "Erro desconhecido"; }
-          }
-          if (!sucesso) erros.push({ partName: parte.name, errorMessage: erro, pages: `${parte.startPage}–${parte.startPage + parte.pageCount - 1}` });
-          parte.base64 = "";
-        }
+        setProcessingFiles(resultado.parts.map(p => ({ name: p.name, status: "pending" })));
+        const execucao = await processarComRetentativas(resultado.parts.length, async index => {
+          const parte = resultado.parts[index];
+          const extraidasParte = await processOnePart(parte, regras);
+          extraidas.push(...extraidasParte); lidas.push(parte);
+          return extraidasParte;
+        }, p => {
+          setProcessingFiles(prev => prev.map((f, index) => index === p.index ? { ...f, status: p.status } : f));
+          setMensagemProgresso(p.message);
+          setProgress(Math.round(10 + lidas.length / resultado.parts.length * 85));
+        });
+        erros = execucao.failures.map(({ index, error }) => {
+          const parte = resultado.parts[index];
+          return { partName: parte.name, errorMessage: error, pages: `${parte.startPage}–${parte.startPage + parte.pageCount - 1}` };
+        });
+        resultado.parts.forEach(p => { p.base64 = ""; });
+        setResumoExtracao(execucao.summary);
+        if (execucao.stopped) toast.error(execucao.summary, { duration: 15000 });
         auditoria = calcularCobertura(resultado.totalPages, lidas, extraidas);
         novas = normalizePieces(extraidas);
         auditoria.linhasDescartadas = extraidas.length - novas.length;
@@ -695,7 +651,7 @@ const Index = () => {
                 key={c.id}
                 type="button"
                 onClick={() => escolherCliente(c.id)}
-                disabled={isExtracting}
+                disabled={isExtracting || recuperando}
                 aria-pressed={cliente === c.id}
                 className={cn(
                   "relative flex h-14 min-w-0 flex-1 items-center gap-3 rounded-xl border bg-card px-3 text-left shadow-soft transition-colors duration-150 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60",
@@ -805,7 +761,7 @@ const Index = () => {
         <ExtractionHistory onLoad={handleLoadFromHistory} refreshKey={historyRefreshKey} />
 
         {/* Progress */}
-        {isExtracting && (
+        {(isExtracting || recuperando) && (
           <Card className="mb-8">
             <CardContent className="py-8">
               <div className="flex flex-col gap-4 items-center">
@@ -821,23 +777,25 @@ const Index = () => {
                   Extraindo peças...
                 </div>
                 <Progress value={progress} className="max-w-md" />
+                <p className="text-xs text-muted-foreground tabular-nums">{progress}% · {mensagemProgresso}</p>
                 {processingFiles.length > 0 && (
                   <div className="w-full max-w-md space-y-1">
                     {processingFiles.map((f, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs">
                         {f.status === "pending" && <span className="text-muted-foreground">⏳</span>}
+                        {f.status === "waiting" && <Clock className="h-4 w-4 text-warning" />}
                         {f.status === "processing" && <span className="animate-spin">⚙️</span>}
                         {f.status === "done" && <span className="text-success">✅</span>}
                         {f.status === "error" && <span className="text-destructive">❌</span>}
                         <span className={f.status === "processing" ? "font-medium text-foreground" : "text-muted-foreground"}>
-                          {f.name}
+                          {f.name}{f.status === "waiting" && <span className="ml-2 text-warning">aguardando nova tentativa</span>}
                         </span>
                       </div>
                     ))}
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Isso pode levar até 1 minuto por PDF
+                  {mensagemProgresso.includes("nova tentativa") ? "Aguardando liberação para tentar novamente." : "O tempo depende do tamanho do book."}
                 </p>
               </div>
             </CardContent>
@@ -847,6 +805,7 @@ const Index = () => {
         <input ref={retryInput} aria-label="PDF original para recuperar páginas" type="file" accept=".pdf" className="hidden" onChange={e => {
           const file = e.target.files?.[0]; e.target.value = ""; if (file) void reprocessar(file);
         }} />
+        {!isExtracting && !recuperando && resumoExtracao && <p className="mb-3 text-xs text-muted-foreground">{resumoExtracao}</p>}
         <AvisoCobertura cobertura={cobertura} onRetry={solicitarReprocessamento} busy={recuperando || isExtracting} />
         {cobertura && pieces.length === 0 && rommanelPieces.length === 0 && !isExtracting && <div className="mb-4 text-sm text-muted-foreground">0 peças<ResumoCobertura cobertura={cobertura} /><InfoCobertura cobertura={cobertura} /></div>}
 
