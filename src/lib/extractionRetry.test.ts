@@ -38,6 +38,17 @@ describe("retentativas por erro", () => {
     await vi.advanceTimersByTimeAsync(999); expect(execute).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1); await task; expect(execute).toHaveBeenCalledTimes(2);
   });
+  it("X aparece só depois de esgotar as quatro tentativas de limite", async () => {
+    vi.useFakeTimers(); const execute=vi.fn().mockRejectedValue(new ExtractionError("limite",429));
+    const events: string[]=[]; const task=processarComRetentativas(1,execute,p=>events.push(p.status));
+    await vi.advanceTimersByTimeAsync(209999);
+    expect(execute).toHaveBeenCalledTimes(3);
+    expect(events).not.toContain("error");
+    await vi.advanceTimersByTimeAsync(1);
+    expect((await task).failures).toHaveLength(1);
+    expect(execute).toHaveBeenCalledTimes(4);
+    expect(events.at(-1)).toBe("error");
+  });
   it("lê Retry-After em segundos ou data HTTP", () => {
     expect(retryAfterSeconds("60")).toBe(60);
     expect(retryAfterSeconds("Mon, 26 Oct 2026 21:11:00 GMT",Date.parse("2026-10-26T21:10:00Z"))).toBe(60);
