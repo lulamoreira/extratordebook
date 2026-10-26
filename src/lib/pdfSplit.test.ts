@@ -6,7 +6,7 @@ async function criarPdfLeve(paginas: number): Promise<File> {
   const doc = await PDFDocument.create();
   for (let i = 0; i < paginas; i++) doc.addPage([200, 200]);
   const bytes = await doc.save();
-  return new File([bytes], `book_${paginas}p.pdf`, { type: "application/pdf" });
+  return new File([new Uint8Array(bytes)], `book_${paginas}p.pdf`, { type: "application/pdf" });
 }
 
 describe("splitPdf — caso normal inalterado", () => {
