@@ -629,7 +629,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader onGoHome={handleGoHome} busy={isExtracting} />
+      <AppHeader onGoHome={handleGoHome} busy={isExtracting || recuperando} />
 
       <div className="mx-auto max-w-7xl p-4 md:p-8">
         {/* Título único da página */}
