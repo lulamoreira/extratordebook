@@ -6,7 +6,10 @@ async function criarPdfLeve(paginas: number): Promise<File> {
   const doc = await PDFDocument.create();
   for (let i = 0; i < paginas; i++) doc.addPage([200, 200]);
   const bytes = await doc.save();
-  return new File([new Uint8Array(bytes)], `book_${paginas}p.pdf`, { type: "application/pdf" });
+  const file = new File([new Uint8Array(bytes)], `book_${paginas}p.pdf`, { type: "application/pdf" });
+  // O File do jsdom não implementa arrayBuffer(); usamos o buffer real do pdf-lib.
+  Object.defineProperty(file, "arrayBuffer", { value: async () => bytes.buffer as ArrayBuffer });
+  return file;
 }
 
 describe("splitPdf — caso normal inalterado", () => {
