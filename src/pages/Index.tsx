@@ -216,10 +216,20 @@ const Index = () => {
     if (clienteEfetivo === "rommanel") {
       try {
         toast.info("Dividindo PDF em partes de até 10 páginas...");
-        const { pieces: linhas, errors, totalPages } = await extrairBookRommanel(file, (p) => {
-          setProgress(p.progress);
-          setProcessingFiles(p.partes);
-        });
+        const { pieces: linhas, errors, totalPages, partesSubdivididas, paginasPesadas } =
+          await extrairBookRommanel(file, (p) => {
+            setProgress(p.progress);
+            setProcessingFiles(p.partes);
+          });
+        if (partesSubdivididas > 0 || paginasPesadas > 0) {
+          toast.info(
+            `Fatiamento por peso: ${partesSubdivididas} parte(s) subdivididas` +
+              (paginasPesadas > 0
+                ? ` e ${paginasPesadas} página(s) pesada(s) enviadas isoladamente (podem falhar).`
+                : "."),
+            { duration: 10000 }
+          );
+        }
         setPieces([]);
         setRommanelPieces(linhas);
         setRommanelTotalPages(totalPages);
@@ -265,7 +275,16 @@ const Index = () => {
 
     try {
       toast.info("Dividindo PDF em partes de até 10 páginas...");
-      const { parts, totalPages } = await splitPdf(file);
+      const { parts, totalPages, partesSubdivididas, paginasPesadas } = await splitPdf(file);
+      if (partesSubdivididas > 0 || paginasPesadas > 0) {
+        toast.info(
+          `Fatiamento por peso: ${partesSubdivididas} parte(s) subdivididas` +
+            (paginasPesadas > 0
+              ? ` e ${paginasPesadas} página(s) pesada(s) enviadas isoladamente (podem falhar).`
+              : "."),
+          { duration: 10000 }
+        );
+      }
       setProgress(10);
 
       const fileStatuses = parts.map((p) => ({ name: p.name, status: "pending" as const }));
@@ -389,6 +408,12 @@ const Index = () => {
     const citado = clienteNoNomeDoArquivo(file.name);
     if (citado && citado !== cliente) {
       setConflitoCliente({ file, clienteDoArquivo: citado });
+      return;
+    }
+    // Acima de 100MB não bloqueia, mas avisa antes: arquivos muito grandes
+    // podem deixar o navegador lento.
+    if (file.size > AVISO_ARQUIVO_MB * 1024 * 1024) {
+      setArquivoPesado(file);
       return;
     }
     processFile(file);
