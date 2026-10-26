@@ -844,7 +844,7 @@ const Index = () => {
           </Card>
         )}
 
-        <input ref={retryInput} type="file" accept=".pdf" className="hidden" onChange={e => {
+        <input ref={retryInput} aria-label="PDF original para recuperar páginas" type="file" accept=".pdf" className="hidden" onChange={e => {
           const file = e.target.files?.[0]; e.target.value = ""; if (file) void reprocessar(file);
         }} />
         <AvisoCobertura cobertura={cobertura} onRetry={solicitarReprocessamento} busy={recuperando || isExtracting} />
