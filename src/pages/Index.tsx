@@ -677,12 +677,12 @@ const Index = () => {
                     <p className="text-sm text-muted-foreground">
                       {isDragging
                         ? "Solte para iniciar o processamento"
-                        : "Selecione um PDF (máx. 50MB) ou arraste para esta área"
+                        : "Selecione um PDF ou arraste para esta área"
                       }
                     </p>
                     {!isDragging && (
                       <p className="text-xs text-muted-foreground">
-                        PDFs longos são divididos automaticamente em partes de até 10 páginas.
+                        PDFs longos são divididos automaticamente; books muito pesados podem demorar mais.
                       </p>
                     )}
                   </div>
@@ -950,6 +950,31 @@ const Index = () => {
             </AlertDialogCancel>
             <AlertDialogAction onClick={resolverConflitoTrocando}>
               Trocar para {conflitoCliente ? getCliente(conflitoCliente.clienteDoArquivo).nome : ""} e extrair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Aviso de arquivo muito grande — não bloqueia, só alerta sobre lentidão */}
+      <AlertDialog open={arquivoPesado !== null} onOpenChange={(aberto) => !aberto && setArquivoPesado(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arquivo muito grande</AlertDialogTitle>
+            <AlertDialogDescription>
+              PDFs acima de 100MB podem deixar o navegador lento enquanto são abertos e divididos.
+              Recomendamos fechar outras abas antes de continuar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setArquivoPesado(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const file = arquivoPesado;
+                setArquivoPesado(null);
+                if (file) processFile(file);
+              }}
+            >
+              Continuar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
