@@ -8,6 +8,13 @@
       "when": 1792430729483,
       "tag": "0000_add_montreal_cliente_e_semeado",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793048786411,
+      "tag": "0001_add_extraction_coverage",
+      "breakpoints": true
     }
   ]
 }
