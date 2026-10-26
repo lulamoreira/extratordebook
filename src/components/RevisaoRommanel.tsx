@@ -41,6 +41,8 @@ import {
   marcarAprendizado,
 } from "@/lib/rommanelRevisao";
 import { cn } from "@/lib/utils";
+import { type Cobertura } from "@/lib/pageCoverage";
+import { ResumoCobertura, InfoCobertura } from "@/components/CoberturaExtracao";
 
 export interface RevisaoRommanelProps {
   pieces: RommanelPiece[];
@@ -48,6 +50,8 @@ export interface RevisaoRommanelProps {
   entryId: string | null;
   /** Total de páginas do book, quando conhecido (usado nos avisos de página). */
   totalPages?: number;
+  cobertura?: Cobertura;
+  preservarEdicoes?: boolean;
   onPiecesChange?: (pieces: RommanelPiece[]) => void;
 }
 
@@ -83,6 +87,8 @@ export const RevisaoRommanel = ({
   entryId,
   totalPages,
   onPiecesChange,
+  cobertura,
+  preservarEdicoes,
 }: RevisaoRommanelProps) => {
   const [linhas, setLinhas] = useState<RommanelPiece[]>(pieces);
   const [carregando, setCarregando] = useState(true);
@@ -97,17 +103,19 @@ export const RevisaoRommanel = ({
   useEffect(() => {
     let ativo = true;
     setCarregando(true);
+    if (preservarEdicoes) { setLinhas(pieces); setCarregando(false); return; }
     marcarAprendizado(pieces)
       .then((res) => {
         if (!ativo) return;
         setLinhas(res);
+        onPiecesChange?.(res);
         setSujo(false);
       })
       .finally(() => ativo && setCarregando(false));
     return () => {
       ativo = false;
     };
-  }, [pieces]);
+  }, [pieces, preservarEdicoes]);
 
   // Aviso do navegador quando há alterações não salvas.
   useEffect(() => {
@@ -278,7 +286,7 @@ export const RevisaoRommanel = ({
         cliente="rommanel"
         clienteNome="Rommanel"
         titulo={fileName || "Revisão"}
-        resumo={`${linhas.length} linhas de peça`}
+        resumo={<>{linhas.length} linhas de peça<ResumoCobertura cobertura={cobertura} /></>}
         extra={
           <p className="text-xs text-muted-foreground tabular-nums">
             {carregando
@@ -508,6 +516,7 @@ export const RevisaoRommanel = ({
             </span>
           )}
         </div>
+        <div className="px-4 pb-2"><InfoCobertura cobertura={cobertura} /></div>
       </div>
     </div>
   );
