@@ -553,11 +553,13 @@ const Index = () => {
       let novas: Piece[] | RommanelPiece[];
       let auditoria: Cobertura;
       let erros: PartError[];
+      let interrompido: string | undefined;
       if (cliente === "rommanel") {
         const resultado = await extrairBookRommanel(file, p => { setProgress(p.progress); setProcessingFiles(p.partes); setMensagemProgresso(p.mensagem ?? ""); }, {
           paginas: cobertura.paginasFaltando, anteriores: revisaoAtual.current, totalPaginas: cobertura.totalPaginas,
         });
         setResumoExtracao(resultado.resumo);
+        interrompido = resultado.interrompido;
         if (resultado.interrompido) toast.error(resultado.resumo, { duration: 15000 });
         novas = resultado.pieces;
         auditoria = resultado.cobertura;
@@ -585,6 +587,7 @@ const Index = () => {
         });
         resultado.parts.forEach(p => { p.base64 = ""; });
         setResumoExtracao(execucao.summary);
+        interrompido = execucao.stopped;
         if (execucao.stopped) toast.error(execucao.summary, { duration: 15000 });
         auditoria = calcularCobertura(resultado.totalPages, lidas, extraidas);
         novas = normalizePieces(extraidas);
@@ -609,7 +612,7 @@ const Index = () => {
         setCurrentEntryId(entry.id);
       }
       setHistoryRefreshKey(k => k + 1);
-      toast.success(atualizada.paginasFaltando.length ? "Trechos recuperados; ainda há páginas não lidas." : "Todas as páginas foram lidas. Edições preservadas.");
+      if (!interrompido) toast.success(atualizada.paginasFaltando.length ? "Trechos recuperados; ainda há páginas não lidas." : "Todas as páginas foram lidas. Edições preservadas.");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível reprocessar as páginas."); }
     finally { setRecuperando(false); }
   };
